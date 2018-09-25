@@ -12,10 +12,13 @@ ap.add_argument("-v", "--video", help="Path to video file")
 ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
 args = vars(ap.parse_args())
 
-# 111, 23, 22
-greenLower = (30, 16, 39)
-greenUpper = (85, 255, 255)
-pts = deque(maxlen=args["buffer"])
+greenLower = (55, 82, 90)
+greenUpper = (96, 255, 255)
+#orangeLower = (8, 124, 178)
+#orangeUpper = (255, 255, 255)
+
+orangeLower = (6, 120, 170)
+orangeUpper = (255, 255, 255)
 
 if not args.get("video", False):
 	print("Please supply video file")
@@ -25,71 +28,59 @@ else:
 
 time.sleep(2.0)
 
+def findColor(frame, min_bound, max_bound):
+	BLUR_RADIUS = 11
+	blurred = cv2.GaussianBlur(frame, (BLUR_RADIUS, BLUR_RADIUS), 0)
+	hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+
+	mask = cv2.inRange(hsv, min_bound, max_bound)
+	mask = cv2.erode(mask, None, iterations=1)
+	mask = cv2.dilate(mask, None, iterations=1)
+
+	cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+	cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+	return cnts
+
+def getPts(cnts):
+	return [cv2.minEnclosingCircle(c)[0] for c in cnts]
+
+def drawColorLocations(frame, cnts):
+	for c in cnts:
+		M = cv2.moments(c)
+		center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+ 
+		# draw the circle and centroid on the frame,
+		# then update the list of tracked points
+		cv2.circle(frame, center, 5, (0, 0, 255), -1)
+
+def drawPath(frame, ps):
+	pts = [(int(pt[0] * 1.5) - 500, int(pt[1] * 1.5) - 500) for pt in ps]
+	for index in range(len(pts) - 1):
+		cv2.line(frame, pts[index], pts[index + 1], (255, 255, 255))
+
+
+points = []
+points2 = []
 while True:
 	frame = vs.read()[1]
 
 	if frame is None:
 		break
 
-	frame = imutils.resize(frame, width=600)
-	blurred = cv2.GaussianBlur(frame, (11, 11), 0)
-	hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+	frame = imutils.resize(frame, width=1600)
 
-	mask = cv2.inRange(hsv, greenLower, greenUpper)
-	mask = cv2.erode(mask, None, iterations=2)
-	mask = cv2.dilate(mask, None, iterations=2)
+	greenLocs = findColor(frame, greenLower, greenUpper)
+	greenPoints = getPts(greenLocs)
+	drawColorLocations(frame, greenLocs)
+	points2 += greenPoints
+	drawPath(frame, points2)
 
-	cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-	cnts = cnts[0] if imutils.is_cv2() else cnts[1]
-	center = None
+	orangeLocs = findColor(frame, orangeLower, orangeUpper)
+	orangePoints = getPts(orangeLocs)
+	drawColorLocations(frame, orangeLocs)
 
-	"""
-	if len(cnts) > 0:
-		print(len(cnts))
-		c = max(cnts, key=cv2.contourArea)
-		((x, y), radius) = cv2.minEnclosingCircle(c)
-		M = cv2.moments(c)
-		center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
- 
-		# only proceed if the radius meets a minimum size
-		if radius > 1:
-			# draw the circle and centroid on the frame,
-			# then update the list of tracked points
-			cv2.circle(frame, (int(x), int(y)), int(radius),
-				(0, 255, 255), 2)
-			cv2.circle(frame, center, 5, (0, 0, 255), -1)
-	"""
-	for cnt in cnts:
-		print(len(cnts))
-		#c = max(cnts, key=cv2.contourArea)
-		c = cnt
-		((x, y), radius) = cv2.minEnclosingCircle(c)
-		M = cv2.moments(c)
-		center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
- 
-		# only proceed if the radius meets a minimum size
-		if radius > 1:
-			# draw the circle and centroid on the frame,
-			# then update the list of tracked points
-			cv2.circle(frame, (int(x), int(y)), int(radius),
-				(0, 255, 255), 2)
-			cv2.circle(frame, center, 5, (0, 0, 255), -1)
-	
- 
-	# update the points queue
-	pts.appendleft(center)
-
-	# loop over the set of tracked points
-	for i in range(1, len(pts)):
-		# if either of the tracked points are None, ignore
-		# them
-		if pts[i - 1] is None or pts[i] is None:
-			continue
- 
-		# otherwise, compute the thickness of the line and
-		# draw the connecting lines
-		thickness = int(np.sqrt(args["buffer"] / float(i + 1)) * 2.5)
-		cv2.line(frame, pts[i - 1], pts[i], (0, 0, 255), thickness)
+	points += orangePoints
+	drawPath(frame, points)
  
 	# show the frame to our screen
 	cv2.imshow("Frame", frame)
@@ -98,14 +89,9 @@ while True:
 	# if the 'q' key is pressed, stop the loop
 	if key == ord("q"):
 		break
+
  
-# if we are not using a video file, stop the camera video stream
-if not args.get("video", False):
-	vs.stop()
- 
-# otherwise, release the camera
-else:
-	vs.release()
+vs.release()
  
 # close all windows
 cv2.destroyAllWindows()

@@ -28,6 +28,7 @@ if len(refPt) == 4:
     src_pts = np.float32([refPt[0], refPt[1], refPt[3], refPt[2]])
     dst_pts = np.float32([[0, 0], [cols - 1, 0], [0, rows - 1], [cols - 1, rows - 1]])
     projective_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
+    print(projective_matrix)
     img_output = cv2.warpPerspective(clone, projective_matrix, (cols, rows))
     cv2.imshow("output", img_output)
     cv2.waitKey(0)
