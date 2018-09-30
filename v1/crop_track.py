@@ -14,19 +14,18 @@ ap.add_argument("-v", "--video", help="Path to video file")
 ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
 args = vars(ap.parse_args())
 
-greenLower = (55, 82, 90)
-greenUpper = (96, 255, 255)
-#orangeLower = (8, 124, 178)
-#orangeUpper = (255, 255, 255)
+# define color ranges for tracking
+GREEN_COLOR_LOWER_BOUND = (55, 82, 90)
+GREEN_COLOR_UPPER_BOUND = (96, 255, 255)
 
-orangeLower = (6, 120, 170)
-orangeUpper = (255, 255, 255)
+ORANGE_COLOR_LOWER_BOUND = (6, 120, 170)
+ORANGE_COLOR_UPPER_BOUND = (255, 255, 255)
 
 if not args.get("video", False):
         print("Please supply video file")
         sys.exit(0)
 else:
-        vs = cv2.VideoCapture(args["video"])
+        VIDEO_SOURCE = cv2.VideoCapture(args["video"])
 
 time.sleep(2.0)
 
@@ -55,79 +54,85 @@ def drawColorLocations(frame, cnts):
                 # then update the list of tracked points
                 cv2.circle(frame, center, 5, (0, 0, 255), -1)
 
-greenPointsTrail = []
-greenPointsWindow = "green"
-orangePointsTrail = []
-orangePointsWindow = "orange"
-mainWindow = "frame"
-frameScaleWidth = 1600
-cv2.namedWindow(mainWindow)
+# define window names
+WINDOW_GREEN_PATH = "green"
+WINDOW_ORANGE_PATH = "orange"
+WINDOW_MAIN = "frame"
+cv2.namedWindow(WINDOW_MAIN)
 
-frame = vs.read()[1]
-frame = imutils.resize(frame, width=frameScaleWidth)
+# scale factor for raw video
+# 4K doesn't fit on the screen :(
+FRAME_SCALE_WIDTH = 1600
+
+greenPointsTrail = []
+orangePointsTrail = []
+
+# read the first frame
+frame = VIDEO_SOURCE.read()[1]
+frame = imutils.resize(frame, width=FRAME_SCALE_WIDTH)
 if frame is None:
-        vs.release()
+        VIDEO_SOURCE.release()
         sys.exit(1)
 
-refPt = []
-def click_and_crop(event, x, y, flags, param):
+cropRefPt = []
+def clickAndCrop(event, x, y, flags, param):
     # if the left mouse button was clicked, record the starting
     # (x, y) coordinates and indicate that cropping is being
     # performed
-    global refPt
+    global cropRefPt
     if event == cv2.EVENT_LBUTTONDOWN:
-        refPt = [(x, y)]
+        cropRefPt = [(x, y)]
 
     # check to see if the left mouse button was released
     elif event == cv2.EVENT_LBUTTONUP:
         # record the ending (x, y) coordinates and indicate that
         # the cropping operation is finished
-        refPt.append((x, y))
+        cropRefPt.append((x, y))
 
         # draw a rectangle around the region of interest
         frameCopy = frame.copy()
-        cv2.rectangle(frameCopy, refPt[0], refPt[1], (0, 255, 0), 2)
-        cv2.imshow(mainWindow, frameCopy)
+        cv2.rectangle(frameCopy, cropRefPt[0], cropRefPt[1], (0, 255, 0), 2)
+        cv2.imshow(WINDOW_MAIN, frameCopy)
 
-cv2.setMouseCallback(mainWindow, click_and_crop)
+cv2.setMouseCallback(WINDOW_MAIN, clickAndCrop)
 
 while True:
-        cv2.imshow(mainWindow, frame)
+        cv2.imshow(WINDOW_MAIN, frame)
         key = cv2.waitKey(0)
 
         if key == ord('q'):
                 sys.exit(1)
 
-        if key == ord('c') and len(refPt) == 2:
+        if key == ord('c') and len(cropRefPt) == 2:
                 break
 
-cv2.setMouseCallback(mainWindow, lambda *args : None)
+cv2.setMouseCallback(WINDOW_MAIN, lambda *args : None)
 
 while True:
-        rawFrame = vs.read()[1]
+        rawFrame = VIDEO_SOURCE.read()[1]
 
         if rawFrame is None:
                 break
 
-        rawFrame = imutils.resize(rawFrame, width=frameScaleWidth)
-        frame = rawFrame.copy()[refPt[0][1]:refPt[1][1], refPt[0][0]:refPt[1][0]]
-        cv2.imshow(mainWindow, frame)
+        rawFrame = imutils.resize(rawFrame, width=FRAME_SCALE_WIDTH)
+        frame = rawFrame.copy()[cropRefPt[0][1]:cropRefPt[1][1], cropRefPt[0][0]:cropRefPt[1][0]]
+        cv2.imshow(WINDOW_MAIN, frame)
 
-        greenLocs = findColor(frame, greenLower, greenUpper)
+        greenLocs = findColor(frame, GREEN_COLOR_LOWER_BOUND, GREEN_COLOR_UPPER_BOUND)
         greenPoints = getPts(greenLocs)
         drawColorLocations(frame, greenLocs)
         greenPointsTrail += greenPoints
 
-        orangeLocs = findColor(frame, orangeLower, orangeUpper)
+        orangeLocs = findColor(frame, ORANGE_COLOR_LOWER_BOUND, ORANGE_COLOR_UPPER_BOUND)
         orangePoints = getPts(orangeLocs)
         drawColorLocations(frame, orangeLocs)
         orangePointsTrail += orangePoints
 
-        drawPath(greenPointsWindow, greenPointsTrail, 10.0)
-        drawPath(orangePointsWindow, orangePointsTrail, 10.0)
+        drawPath(WINDOW_GREEN_PATH, greenPointsTrail, 10.0)
+        drawPath(WINDOW_ORANGE_PATH, orangePointsTrail, 10.0)
  
         # show the frame to our screen
-        cv2.imshow(mainWindow, frame)
+        cv2.imshow(WINDOW_MAIN, frame)
         key = cv2.waitKey(1) & 0xFF
  
         # if the 'q' key is pressed, stop the loop
@@ -135,7 +140,7 @@ while True:
                 break
 
 
-vs.release()
+VIDEO_SOURCE.release()
  
 # close all windows
 cv2.destroyAllWindows()
