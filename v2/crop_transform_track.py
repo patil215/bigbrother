@@ -70,7 +70,6 @@ orangePointsTrail = []
 # read the first frame
 frame = VIDEO_SOURCE.read()[1]
 frame = imutils.resize(frame, width=FRAME_SCALE_WIDTH)
-
 if frame is None:
         VIDEO_SOURCE.release()
         sys.exit(1)
@@ -95,13 +94,6 @@ def clickAndCrop(event, x, y, flags, param):
         cv2.rectangle(frameCopy, cropRefPt[0], cropRefPt[1], (0, 255, 0), 2)
         cv2.imshow(WINDOW_MAIN, frameCopy)
 
-paperRefPt = []
-def click_and_transform(event, x, y, flags, param):
-    global paperRefPt
-    if event == cv2.EVENT_LBUTTONDOWN:
-        paperRefPt.append((x, y))
-
-
 cv2.setMouseCallback(WINDOW_MAIN, clickAndCrop)
 
 while True:
@@ -114,42 +106,17 @@ while True:
         if key == ord('c') and len(cropRefPt) == 2:
                 break
 
-cv2.setMouseCallback(WINDOW_MAIN, click_and_transform)
-
-frame = frame.copy()[cropRefPt[0][1]:cropRefPt[1][1], cropRefPt[0][0]:cropRefPt[1][0]]
-rows, cols = frame.shape[:2]
-
-while True:
-        cv2.imshow(WINDOW_MAIN, frame)
-        key = cv2.waitKey(0)
-
-        if key == ord('p') and len(paperRefPt) == 4:
-            break
-
-src_pts = np.float32([paperRefPt[0], paperRefPt[1], paperRefPt[3], paperRefPt[2]])
-dst_pts = np.float32([[0, 0], [cols - 1, 0], [0, rows - 1], [cols - 1, rows - 1]])
-projective_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-
-print(frame)
-print(projective_matrix)
-sys.exit(0)
-
 cv2.setMouseCallback(WINDOW_MAIN, lambda *args : None)
 
 while True:
         rawFrame = VIDEO_SOURCE.read()[1]
-
 
         if rawFrame is None:
                 break
 
         rawFrame = imutils.resize(rawFrame, width=FRAME_SCALE_WIDTH)
         frame = rawFrame.copy()[cropRefPt[0][1]:cropRefPt[1][1], cropRefPt[0][0]:cropRefPt[1][0]]
-
-        frame = cv2.warpPerspective(frame.copy(), projective_matrix, frame.shape[:2])
-
         cv2.imshow(WINDOW_MAIN, frame)
-
 
         greenLocs = findColor(frame, GREEN_COLOR_LOWER_BOUND, GREEN_COLOR_UPPER_BOUND)
         greenPoints = getPts(greenLocs)

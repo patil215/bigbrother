@@ -15,8 +15,15 @@ ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
 args = vars(ap.parse_args())
 
 # define color ranges for tracking
-GREEN_COLOR_LOWER_BOUND = (55, 82, 90)
-GREEN_COLOR_UPPER_BOUND = (96, 255, 255)
+# This is actually white
+
+# USE FOR DIGITS_1
+# GREEN_COLOR_LOWER_BOUND = (85, 100, 110)
+# GREEN_COLOR_UPPER_BOUND = (190, 255, 255)
+
+# USE FOR DIGITS_2
+GREEN_COLOR_LOWER_BOUND = (80, 20, 0)
+GREEN_COLOR_UPPER_BOUND = (115, 255, 255)
 
 ORANGE_COLOR_LOWER_BOUND = (6, 120, 170)
 ORANGE_COLOR_UPPER_BOUND = (255, 255, 255)
@@ -127,26 +134,29 @@ while True:
             break
 
 src_pts = np.float32([paperRefPt[0], paperRefPt[1], paperRefPt[3], paperRefPt[2]])
-dst_pts = np.float32([[0, 0], [cols - 1, 0], [0, rows - 1], [cols - 1, rows - 1]])
+dst_pts = np.float32([[0, 0], [1100, 0], [0, 850], [1100, 850]])
 projective_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
 
-print(frame)
 print(projective_matrix)
-sys.exit(0)
 
 cv2.setMouseCallback(WINDOW_MAIN, lambda *args : None)
 
+def transform_points(matrix, points):
+    transformed = []
+    for point in points:
+        result = matrix.dot(np.array([point[0], point[1], 1]))
+        transformed.append((result[0] / result[2], result[1] / result[2]))
+    return transformed
+
 while True:
         rawFrame = VIDEO_SOURCE.read()[1]
-
-
         if rawFrame is None:
                 break
 
         rawFrame = imutils.resize(rawFrame, width=FRAME_SCALE_WIDTH)
         frame = rawFrame.copy()[cropRefPt[0][1]:cropRefPt[1][1], cropRefPt[0][0]:cropRefPt[1][0]]
 
-        frame = cv2.warpPerspective(frame.copy(), projective_matrix, frame.shape[:2])
+        #frame = cv2.warpPerspective(frame.copy(), projective_matrix, frame.shape[:2])
 
         cv2.imshow(WINDOW_MAIN, frame)
 
@@ -161,8 +171,8 @@ while True:
         drawColorLocations(frame, orangeLocs)
         orangePointsTrail += orangePoints
 
-        drawPath(WINDOW_GREEN_PATH, greenPointsTrail, 10.0)
-        drawPath(WINDOW_ORANGE_PATH, orangePointsTrail, 10.0)
+        drawPath(WINDOW_GREEN_PATH, transform_points(projective_matrix, greenPointsTrail), 1.0)
+        #drawPath(WINDOW_ORANGE_PATH, transform_points(projective_matrix, orangePointsTrail), 1.0)
  
         # show the frame to our screen
         cv2.imshow(WINDOW_MAIN, frame)
