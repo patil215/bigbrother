@@ -1,62 +1,59 @@
 import argparse
 import cv2
 import time
-
-def current_time_millis():
-    return int(round(time.time() * 1000))
+import click
+import numpy as np
 
 class TracePoint:
-    # T is in milliseconds since start of path trace.
+    # t signifies milliseconds since start of path trace.
     def __init__(self, x, y, z=0, t=0):
         self.x = x
         self.y = y
         self.z = z
         self.t = t
 
-canvas = np.zeros((512, 512, 3))
+    def pos(self):
+        return (self.x, self.y)
+
+def create_blank(width, height, rgb_color=(0, 0, 0)):
+    image = np.zeros((height, width, 3), np.uint8)
+    image[:] = rgb_color
+    return image
+
+def current_time_millis():
+    return int(round(time.time() * 1000))
+
+canvas = create_blank(512, 512, rgb_color=(0, 0, 0))
 
 path = []
 start_time = None
 recording = False
+param = None
 
-def mouseCallback(event, x, y, flag, params):
+def handle_mouse_move(event, x, y, flag, params):
+    param = (x, y)
     if recording:
-        path.append(TracePoint(x, y, 0, current_time_millis - start_time))
+        path.append(TracePoint(x, y, 0, current_time_millis() - start_time))
 
 while True:
-    cv2.imshow("canvas", canvas)
+    if recording:
+        # Draw line segments connecting points
+        for index in range(len(path) - 1):
+            cv2.line(canvas, pts[index].pos, pts[index + 1].pos, (255, 255, 255))
 
     key = cv2.waitKey(1) & 0xFF
-    if key == ord(' '):
+    if key == ord('a'):
         if recording:
             recording = False
             break
         else:
             path = []
             recording = True
+            cv2.setMouseCallback('Drawing spline', handle_mouse_move, param)
 
-    if recording:
-        path.append(TracePoint(
+    cv2.imshow("canvas", canvas)
+
+# Dump points to file
 
 
-def click_and_crop(event, x, y, flags, param):
-	# grab references to the global variables
-	global refPt, cropping
-
-	# if the left mouse button was clicked, record the starting
-	# (x, y) coordinates and indicate that cropping is being
-	# performed
-	if event == cv2.EVENT_LBUTTONDOWN:
-		refPt = [(x, y)]
-		cropping = True
-
-	# check to see if the left mouse button was released
-	elif event == cv2.EVENT_LBUTTONUP:
-		# record the ending (x, y) coordinates and indicate that
-		# the cropping operation is finished
-		refPt.append((x, y))
-		cropping = False
-
-		# draw a rectangle around the region of interest
-		cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
-		cv2.imshow("image", image)
+cv2.destroyAllWindows()
