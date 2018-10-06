@@ -52,7 +52,7 @@ def plotPath(path, coordinate, color):
 
 def prep(path, R):
     path.transform(R)
-    path.normalize()
+    #path.normalize()
 
 # Test character
 """for x in np.linspace(0, 2 * math.pi, 8):
@@ -62,8 +62,8 @@ def prep(path, R):
 
 # drawTransformed(, path)
 
-#transform = eulerAnglesToRotationMatrix(np.array([math.pi / 4, math.pi / 4, math.pi / 8]))
-transform = eulerAnglesToRotationMatrix(np.array([0, 0, 0]))
+transform = eulerAnglesToRotationMatrix(np.array([math.pi / 4, math.pi / 4, math.pi / 8]))
+#transform = eulerAnglesToRotationMatrix(np.array([0, 0, 0]))
 path_zero = read_obj('data/zero/zero-0')
 path_one = read_obj('data/one/one-0')
 path_test = read_obj('data/zero/zero-1')

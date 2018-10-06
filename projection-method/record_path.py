@@ -28,6 +28,9 @@ def handle_mouse_move(event, x, y, flag, params):
 @click.option('-s', '--start', help="Start by labelling with this index", default=0)
 @click.option('-f', '--folder', help="Folder to save in (by default, data/[recordname]")
 def record(recordname, count, start, folder):
+    """Instructions: Press "a" to begin recording a path, and "a" again when you're done recording.
+    Currently, behavior is undefinied for picking your pen up in between."""
+
     folder = 'data/' + recordname if not folder else folder
     if not os.path.exists(folder):
         os.makedirs(folder)
