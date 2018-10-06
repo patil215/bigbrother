@@ -3,10 +3,11 @@ import cv2
 import time
 import click
 import numpy as np
-from tracepoint import TracePoint
+from tracepoint import TracePoint, TracePath
 import pickle
 import os
 from vizutils import draw_tracepoints
+from fileutils import write_obj, read_obj
 
 def create_blank(width, height, rgb_color=(0, 0, 0)):
     image = np.zeros((height, width, 3), np.uint8)
@@ -19,21 +20,21 @@ def current_time_millis():
 def handle_mouse_move(event, x, y, flag, params):
     path = params[0]
     start_time = params[1]
-    path.append(TracePoint((x, y, 0), current_time_millis() - start_time))
+    path.add(TracePoint((x, y, 0), current_time_millis() - start_time))
 
 @click.command()
 @click.argument('recordname')
 @click.option('-c', '--count', help="Number of data samples to record", default=1)
 @click.option('-s', '--start', help="Start by labelling with this index", default=0)
-@click.option('-f', '--folder', help="Folder to save in (by default, data/[recordname]-data")
+@click.option('-f', '--folder', help="Folder to save in (by default, data/[recordname]")
 def record(recordname, count, start, folder):
-    folder = 'data/' + recordname + '-data' if not folder else folder
+    folder = 'data/' + recordname if not folder else folder
     if not os.path.exists(folder):
         os.makedirs(folder)
 
     for i in range(count):
         canvas = create_blank(512, 512, rgb_color=(0, 0, 0))
-        path = []
+        path = TracePath()
         start_time = None
         recording = False
 
@@ -49,13 +50,12 @@ def record(recordname, count, start, folder):
                     cv2.setMouseCallback("canvas", lambda *args : None)
                     break
                 else:
-                    path = []
+                    path = TracePath()
                     recording = True
                     start_time = current_time_millis()
                     cv2.setMouseCallback('canvas', handle_mouse_move, [path, start_time])
 
-        with open(folder + '/' + recordname + '-' + str(start + i), 'wb') as output:
-            pickle.dump(path, output, pickle.HIGHEST_PROTOCOL)
+        write_obj(folder + '/' + recordname + '-' + str(start + i), path)
 
     cv2.destroyAllWindows()
 

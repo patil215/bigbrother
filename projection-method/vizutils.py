@@ -15,11 +15,10 @@ def create_blank(width, height, rgb_color=(0, 0, 0)):
 
     return image
 
-def draw_tracepoints(frame, tracepoints, scale=1.0, fit_canvas=False, color=(255, 255, 255)):
-	"""Given a list of tracepoints, draw the path on the given frame."""
-
-	xs = np.array([point.pos[0] for point in tracepoints])
-	ys = np.array([point.pos[1] for point in tracepoints])
+def draw_tracepoints(frame, tracepath, scale=1.0, fit_canvas=False, color=(255, 255, 255)):
+	"""Given a tracepath, draw the path on the given frame."""
+	xs = np.array([point.pos[0] for point in tracepath.path])
+	ys = np.array([point.pos[1] for point in tracepath.path])
 
 	height = frame.shape[0]
 	width = frame.shape[1]
@@ -31,8 +30,8 @@ def draw_tracepoints(frame, tracepoints, scale=1.0, fit_canvas=False, color=(255
 
 	draw_points = list(map(lambda p: (int(p[0] * scale), int(p[1] * scale)), draw_points))
 
-	if len(tracepoints) <= 1:
+	if len(tracepath.path) <= 1:
 		return
 
-	for i in range(len(tracepoints) - 1):
+	for i in range(len(tracepath.path) - 1):
 		cv2.line(frame, draw_points[i], draw_points[i + 1], color)

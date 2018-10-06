@@ -4,9 +4,9 @@ import pickle
 import cv2
 from tracepoint import TracePoint
 from vizutils import draw_tracepoints
-
-camera_location = (0, 0, 500) # 10 units up from viewing
-object_center = (256, 256, 0) # Center of canvas drawn
+from classify import classifyDTW
+from fileutils import read_obj, write_obj
+import matplotlib.pyplot as plt
 
 # Calculates Rotation Matrix given euler angles.
 # Theta is a 3D vector with X, Y, and Z rotation amounts (in degrees)
@@ -39,13 +39,20 @@ def create_blank(width, height, rgb_color=(0, 0, 0)):
 
 def drawTransformed(R, path):
     canvas = create_blank(512, 512, rgb_color=(0, 0, 0))
-    for point in path:
-        point.transform(R)
+    path.transform(R)
 
     draw_tracepoints(canvas, path, fit_canvas=True)
 
     cv2.imshow("canvas", canvas)
     cv2.waitKey()
+
+def plotPath(path, coordinate, color):
+    pts = path.time_sequence(coordinate)
+    plt.plot([p[0] for p in pts], [p[1] for p in pts], color)
+
+def prep(path, R):
+    path.transform(R)
+    path.normalize()
 
 # Test character
 """for x in np.linspace(0, 2 * math.pi, 8):
@@ -53,5 +60,27 @@ def drawTransformed(R, path):
         for z in np.linspace(0, 2 * math.pi, 8):
             print(eulerAnglesToRotationMatrix(np.array([x, y, z])))"""
 
-path = pickle.load(open('data/zero-data/zero-0', 'rb'))
-drawTransformed(eulerAnglesToRotationMatrix(np.array([math.pi / 4, math.pi / 4, math.pi / 8])), path)
+# drawTransformed(, path)
+
+#transform = eulerAnglesToRotationMatrix(np.array([math.pi / 4, math.pi / 4, math.pi / 8]))
+transform = eulerAnglesToRotationMatrix(np.array([0, 0, 0]))
+path_zero = read_obj('data/zero/zero-0')
+path_one = read_obj('data/one/one-0')
+path_test = read_obj('data/zero/zero-1')
+
+
+prep(path_zero, transform)
+prep(path_one, transform)
+prep(path_test, transform)
+
+plotPath(path_zero, 0, 'r')
+plotPath(path_one, 0, 'g')
+plotPath(path_test, 0, 'b')
+
+plotPath(path_zero, 1, 'r')
+plotPath(path_one, 1, 'g')
+plotPath(path_test, 1, 'b')
+
+plt.show()
+
+print(classifyDTW({"zero": path_zero, "one": path_one}, path_test))
