@@ -2,6 +2,7 @@ from collections import deque
 from imutils.video import VideoStream
 from drawPath import drawPath
 from createBlank import create_blank
+from colorTrack import trackColor
 import numpy as np
 import argparse
 import cv2
@@ -38,28 +39,12 @@ else:
 time.sleep(2.0)
 
 
-def findColor(frame, min_bound, max_bound):
-    BLUR_RADIUS = 11
-    blurred = cv2.GaussianBlur(frame, (BLUR_RADIUS, BLUR_RADIUS), 0)
-    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-
-    mask = cv2.inRange(hsv, min_bound, max_bound)
-    mask = cv2.erode(mask, None, iterations=1)
-    mask = cv2.dilate(mask, None, iterations=1)
-
-    cnts = cv2.findContours(
-        mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cnts = cnts[0] if imutils.is_cv2() else cnts[1]
-    return cnts
-
-
-def getPts(cnts):
-    return [cv2.minEnclosingCircle(c)[0] for c in cnts]
-
-
 def drawColorLocations(frame, cnts):
     for c in cnts:
         M = cv2.moments(c)
+        if M["m00"] == 0:
+            continue
+
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 
         # draw the circle and centroid on the frame,
@@ -162,10 +147,6 @@ def transform_points(matrix, points):
         transformed.append((result[0] / result[2], result[1] / result[2]))
     return transformed
 
-
-def distance(pointA, pointB):
-    return math.sqrt((pointA[0] - pointB[0]) ** 2 + (pointA[1] - pointB[1]) ** 2)
-
 while True:
     rawFrame = VIDEO_SOURCE.read()[1]
     if rawFrame is None:
@@ -178,23 +159,26 @@ while True:
     # frame = cv2.warpPerspective(frame.copy(), projective_matrix, frame.shape[:2])
 
     cv2.imshow(WINDOW_MAIN, frame)
+    greenPoint = trackColor(frame, greenPointsTrail, (GREEN_COLOR_LOWER_BOUND, GREEN_COLOR_UPPER_BOUND))
+    drawColorLocations(frame, [greenPoint])
+    drawPath(WINDOW_GREEN_PATH, transform_points(projective_matrix, greenPointsTrail), 2.0)
 
-    greenLocs = findColor(frame, GREEN_COLOR_LOWER_BOUND,
-                          GREEN_COLOR_UPPER_BOUND)
-    # print(greenLocs)
-    # sys.exit(0)
-    if len(greenLocs) > 0:
-        greenPoint = greenLocs[0]
-        greenCenterPoint = getPts([greenPoint])[0]
-        drawColorLocations(frame, [greenPoint])
+    # greenLocs = findColor(frame, GREEN_COLOR_LOWER_BOUND,
+    #                       GREEN_COLOR_UPPER_BOUND)
+    # # print(greenLocs)
+    # # sys.exit(0)
+    # if len(greenLocs) > 0:
+    #     greenPoint = greenLocs[0]
+    #     greenCenterPoint = getPts([greenPoint])[0]
+    #     drawColorLocations(frame, [greenPoint])
 
-        if len(greenPointsTrail) == 0 or distance(greenPointsTrail[-1], greenCenterPoint) < 100:
-            greenPointsTrail.append(greenCenterPoint)
+    #     if len(greenPointsTrail) == 0 or distance(greenPointsTrail[-1], greenCenterPoint) < 100:
+    #         greenPointsTrail.append(greenCenterPoint)
 
-        # print(greenPointsTrail)
+    #     # print(greenPointsTrail)
         
-        drawPath(WINDOW_GREEN_PATH, transform_points(
-            projective_matrix, greenPointsTrail), 2.0)
+    #     drawPath(WINDOW_GREEN_PATH, transform_points(
+    #         projective_matrix, greenPointsTrail), 2.0)
 
     # orangeLocs = findColor(frame, ORANGE_COLOR_LOWER_BOUND, ORANGE_COLOR_UPPER_BOUND)
     # orangePoints = getPts(orangeLocs)
