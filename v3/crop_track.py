@@ -185,18 +185,16 @@ while True:
     # sys.exit(0)
     if len(greenLocs) > 0:
         greenPoint = greenLocs[0]
-        greenCenterPoint = getPts([greenPoint])
+        greenCenterPoint = getPts([greenPoint])[0]
         drawColorLocations(frame, [greenPoint])
 
-        if len(greenPointsTrail) > 0:
-            print("trail: {0}, gCP: {1}".format(greenPointsTrail[-1], greenCenterPoint))
-        if len(greenPointsTrail) == 0 or distance(greenPointsTrail[-1], greenCenterPoint[0]) < 100:
-            greenPointsTrail += greenCenterPoint
+        if len(greenPointsTrail) == 0 or distance(greenPointsTrail[-1], greenCenterPoint) < 100:
+            greenPointsTrail.append(greenCenterPoint)
 
         # print(greenPointsTrail)
         
         drawPath(WINDOW_GREEN_PATH, transform_points(
-            projective_matrix, greenPointsTrail), 1.0)
+            projective_matrix, greenPointsTrail), 2.0)
 
     # orangeLocs = findColor(frame, ORANGE_COLOR_LOWER_BOUND, ORANGE_COLOR_UPPER_BOUND)
     # orangePoints = getPts(orangeLocs)
