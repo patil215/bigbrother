@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 def create_blank(width, height, rgb_color=(0, 0, 0)):
     """Create new image(numpy array) filled with certain color in RGB"""
@@ -35,3 +36,8 @@ def draw_tracepoints(frame, tracepath, scale=1.0, fit_canvas=False, color=(255, 
 
 	for i in range(len(tracepath.path) - 1):
 		cv2.line(frame, draw_points[i], draw_points[i + 1], color)
+
+
+def plotPath(path, coordinate, color):
+    pts = path.time_sequence(coordinate)
+    plt.plot([p[0] for p in pts], [p[1] for p in pts], color)

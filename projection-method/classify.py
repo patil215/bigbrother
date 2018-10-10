@@ -11,17 +11,19 @@ def classifyDTW(candidates, path):
 	minDistance = 1000000000000000000000000000000
 	bestCandidate = None
 	for name in candidates.keys():
-		candidate_path = candidates[name]
+		candidate_path = candidates[name][0]
 		x_test = candidate_path.time_sequence(0)
 		y_test = candidate_path.time_sequence(1)
 
 		distance_x, _ = fastdtw(x_actual, x_test, dist=euclidean)
 		distance_y, _ = fastdtw(y_actual, y_test, dist=euclidean)
-		distance = (distance_x + distance_y)**2
+		#distance = (distance_x + distance_y)**2
+		distance = distance_y
 
 		print(name)
 		print(distance_x)
 		print(distance_y)
+		print("")
 
 		if distance < minDistance:
 			bestCandidate = name
