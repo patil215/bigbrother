@@ -14,26 +14,33 @@ VIDEO_SOURCE = cv2.VideoCapture(args["video"])
 
 startIndex = 0
 endIndex = 0
-currentIndex = -1
+currentIndex = 0
 
 videoFrames = []
 while True:
-    currentIndex += 1
-    rawFrame = VIDEO_SOURCE.read()[1]
-    if rawFrame is None:
-        break
-    
-    videoFrames.append(rawFrame)
+    if currentIndex >= len(videoFrames):
+        rawFrame = VIDEO_SOURCE.read()[1]
+        if rawFrame is None:
+            break
+        
+        videoFrames.append(rawFrame)
+
+    rawFrame = videoFrames[currentIndex]
     croppedFrame = imutils.resize(rawFrame, width=1600)
     cv2.imshow("preview", croppedFrame)
 
     key = cv2.waitKey(0) & 0xFF
     if key == ord("s"):
         startIndex = currentIndex
+        continue
     elif key == ord("e"):
         endIndex == currentIndex
         break
+    elif key == ord("b"):
+        currentIndex -= 1
+        continue
     elif key == ord("n"):
+        currentIndex += 1
         continue
     elif key == ord("q"):
         sys.exit(1)
