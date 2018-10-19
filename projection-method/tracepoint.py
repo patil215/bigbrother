@@ -71,3 +71,6 @@ class TracePath:
 
     def time_sequence(self, coordinate):
         return [(p.t, p.pos[coordinate]) for p in self.path]
+
+    def sequence(self, coordinate):
+        return [p.pos[coordinate] for p in self.path]
