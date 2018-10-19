@@ -98,13 +98,13 @@ def predict(filename, data, angle, preview):
 	video_data.normalize()
 	#drawTransformed(video_data)
 
-	plotPath(video_data, 0, 'red')
+	"""plotPath(video_data, 0, 'red')
 	plotPath(video_data, 1, 'blue')
 	plotPath(data["zero"][0], 0, 'yellow')
 	plotPath(data["zero"][0], 1, 'green')
 	plotPath(data["one"][0], 0, 'black')
 	plotPath(data["one"][0], 1, 'brown')
-	plt.show()
+	plt.show()"""
 
 	"""plotPath(path_zero, 1, 'r')
 	plotPath(path_one, 1, 'g')

@@ -18,8 +18,6 @@ def classifyDTW(candidates, path):
 		y_test = candidate_path.sequence(1)
 		#distance_x, _ = fastdtw(x_actual, x_test, dist=euclidean)
 		#distance_y, _ = fastdtw(y_actual, y_test, dist=euclidean)
-		print(x_actual)
-		print(x_test)
 		dist_x, cost_x, acc_x, path_x = dtw(x_actual, x_test, dist=lambda x, y: abs(x - y))
 		dist_y, cost_y, acc_y, path_y = dtw(y_actual, y_test, dist=lambda x, y: abs(x - y))
 
