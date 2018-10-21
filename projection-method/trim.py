@@ -4,70 +4,80 @@ import pickle
 import sys
 from fileutils import read_obj, write_obj
 import click
+from readvideo import getTracePathFromFrames
 import os
+import easygui
+import sys
 
 @click.command()
 @click.argument("video")
-@click.option("-d", "--dest", default="segments", required=False, help="Destination folder for video files")
-@click.option("-s", "--start", default=0, required=False, type=click.INT, help="Start naming files at this index")
-def segment(video, dest, start):
+@click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
+@click.option("-t", "--trace", is_flag=True, help="Enable trace path recording mode")
+def segment(video, dest, trace):
     VIDEO_SOURCE = cv2.VideoCapture(video)
 
     if not os.path.exists(dest):
         os.makedirs(dest)
 
-    savedIndex = start if start else 0
-
-    startIndex = 0
-    endIndex = 0
-    currentIndex = 0
-    videoFrames = []
+    frameIndex = 0
+    clipIndex = 0
 
     while True:
+        startIndex = -1
         while True:
-            print("Current frame: {0}".format(currentIndex))
-            if currentIndex >= len(videoFrames):
-                rawFrame = VIDEO_SOURCE.read()[1]
-                if rawFrame is None:
-                    break
-                
+            VIDEO_SOURCE.set(1, frameIndex)
+            ok, rawFrame = VIDEO_SOURCE.read()
+            if not ok:
+                sys.exit(1)
+
+            if startIndex >= 0:
                 videoFrames.append(rawFrame)
 
-            rawFrame = videoFrames[currentIndex]
-            croppedFrame = imutils.resize(rawFrame, width=1600)
-            cv2.imshow("preview", croppedFrame)
+            frame = imutils.resize(rawFrame, width=1600)
+            cv2.imshow("Clipper", frame)
 
             key = cv2.waitKey(0) & 0xFF
             if key == ord("s"):
-                startIndex = currentIndex
-                print("Set start, end at frame: [{0}, {1}]".format(startIndex, endIndex))
+                startIndex = frameIndex
+                videoFrames = []
+                print("Starting at frame {0}".format(frameIndex))
                 continue
             elif key == ord("e"):
-                endIndex = currentIndex
-                print("Set start, end at frame: [{0}, {1}]".format(startIndex, endIndex))
+                print("Ending at frame {0}".format(frameIndex))
                 break
             elif key == ord("b"):
-                if currentIndex > 0:
-                    currentIndex -= 1
+                frameIndex = frameIndex - 1 if frameIndex > 0 else frameIndex
                 continue
             elif key == ord("n"):
-                currentIndex += 1
+                frameIndex += 1
+                continue
+            elif key == ord("f"):
+                frameIndex += 20
+                continue
+            elif key == ord("a"):
+                frameIndex = frameIndex - 20 if frameIndex > 20 else frameIndex
                 continue
             elif key == ord("q"):
                 sys.exit(1)
 
-        filename = dest + '/' + "{0}".format(savedIndex)
-        print("Saving range [{0}, {1}] ...".format(startIndex, endIndex, filename))
+        # Prompt the user for the class to store the segment as
+        class_name = easygui.enterbox("What is the class of this data? (zero, eight, etc)")
+        segment_dir = dest + '/segments/' + class_name
+        if not os.path.exists(segment_dir):
+            os.makedirs(segment_dir)
+        print("Saving segment...")
+        write_obj(segment_dir + '/' + str(clipIndex), videoFrames)
 
-        # python excludes the last index, so we add 1 to it to get the endIndex frame too
-        trim = videoFrames[startIndex:endIndex + 1]
-        write_obj(filename, trim)
-        print("Saved to {2}".format(startIndex, endIndex, filename))
+        if trace:
+            path = getTracePathFromFrames(videoFrames)
+            path_dir = dest + '/paths/' + class_name
+            if not os.path.exists(path_dir):
+                os.makedirs(path_dir)
+            print("Saving path")
+            write_obj(path_dir + '/' + str(clipIndex), path)
 
-        startIndex = currentIndex
-        endIndex = 0
-        savedIndex += 1
-        print("Set start, end at frame [{0}, {1}]".format(startIndex, endIndex))
+        clipIndex += 1
+
 
 if __name__ == '__main__':
     segment()

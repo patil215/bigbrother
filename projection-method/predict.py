@@ -13,41 +13,13 @@ from motiontrack import Tracker
 from tracepoint import TracePath, TracePoint
 from classify import classifyDTW
 from vizutils import draw_tracepoints, plotPath
+from readvideo import getTracePathFromVideoFile
 
 def prepData(data, R):
 	for category in data:
 		for tracepath in data[category]:
 			tracepath.transform(R)
 			tracepath.normalize()
-
-def getTracePathFromVideo(filename):
-	tracepath = TracePath()
-	video_segment = read_obj(filename)
-	initial_frame = video_segment[0]
-	initial_frame = imutils.resize(initial_frame, width=1600)
-	tracker = Tracker(initial_frame, 'CSRT')
-
-	for frame_index in range(len(video_segment)):
-		frame = video_segment[frame_index]
-		frame = imutils.resize(frame, width=1600)
-
-		bbox = tracker.track(frame)
-
-		timestamp = (1000.0 / 10) * frame_index # TODO don't hardcode
-		
-		"""p1 = (int(bbox[0]), int(bbox[1]))
-		p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-		cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
-		cv2.imshow("badd", frame)
-		cv2.waitKey(0)"""
-
-
-		# Append center of bounding box
-		x = bbox[0] + (bbox[2] / 2) # TODO this might actually be Y, check it
-		y = bbox[1] + (bbox[3] / 2)
-		tracepath.add(TracePoint((x, y, 0), timestamp))
-
-	return tracepath
 
 def playVideo(filename):
 	video_segment = read_obj(filename)
@@ -92,11 +64,14 @@ def predict(filename, data, angle, preview):
 
 	data = readData(data)
 	prepData(data, transform)
+	drawTransformed(data["zero"][0])
+	drawTransformed(data["zero"][1])
+	drawTransformed(data["one"][0])
+	drawTransformed(data["one"][1])
 
-	video_data = getTracePathFromVideo(filename)
-	#video_data.transform(transform)
+	video_data = getTracePathFromVideoFile(filename)
 	video_data.normalize()
-	#drawTransformed(video_data)
+	drawTransformed(video_data)
 
 	"""plotPath(video_data, 0, 'red')
 	plotPath(video_data, 1, 'blue')
