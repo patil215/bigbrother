@@ -30,27 +30,3 @@ def eulerAnglesToRotationMatrix(theta) :
     R = np.dot(R_z, np.dot( R_y, R_x ))
  
     return R
-
-def create_blank(width, height, rgb_color=(0, 0, 0)):
-    image = np.zeros((height, width, 3), np.uint8)
-    image[:] = rgb_color
-    return image
-
-def drawTransformed(R, path):
-    canvas = create_blank(512, 512, rgb_color=(0, 0, 0))
-    path.transform(R)
-
-    draw_tracepoints(canvas, path, fit_canvas=True)
-
-    cv2.imshow("canvas", canvas)
-    cv2.waitKey()
-
-
-# Test character
-"""for x in np.linspace(0, 2 * math.pi, 8):
-    for y in np.linspace(0, 2 * math.pi, 8):
-        for z in np.linspace(0, 2 * math.pi, 8):
-            print(eulerAnglesToRotationMatrix(np.array([x, y, z])))"""
-
-
-#transform = eulerAnglesToRotationMatrix(np.array([0, 7 * math.pi / 16, math.pi / 4]))

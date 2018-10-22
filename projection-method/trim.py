@@ -33,7 +33,7 @@ def segment(video, dest, trace):
             if startIndex >= 0:
                 videoFrames.append(rawFrame)
 
-            frame = imutils.resize(rawFrame, width=1600)
+            frame = imutils.resize(rawFrame, height=700)
             cv2.imshow("Clipper", frame)
 
             key = cv2.waitKey(0) & 0xFF
