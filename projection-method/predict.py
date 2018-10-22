@@ -47,23 +47,23 @@ def predict(filename, data, angle, preview):
 
 	data = readData(data)
 
-	draw_tracepoints(data["zero"][0])
-	draw_tracepoints(data["zero"][1])
-	draw_tracepoints(data["one"][0])
-	draw_tracepoints(data["one"][1])
+	#draw_tracepoints(data["zero"][0])
+	#draw_tracepoints(data["zero"][1])
+	#draw_tracepoints(data["one"][0])
+	#draw_tracepoints(data["one"][1])
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
 
 	prepData(data, transform)
-	draw_tracepoints(data["zero"][0])
-	draw_tracepoints(data["zero"][1])
-	draw_tracepoints(data["one"][0])
-	draw_tracepoints(data["one"][1])
+	#draw_tracepoints(data["zero"][0])
+	#draw_tracepoints(data["zero"][1])
+	#draw_tracepoints(data["one"][0])
+	#draw_tracepoints(data["one"][1])
 
 	video_data = getTracePathFromVideoFile(filename)
 	video_data.normalize()
-	draw_tracepoints(video_data)
+	#draw_tracepoints(video_data)
 
 	"""plotPath(video_data, 0, 'red')
 	plotPath(video_data, 1, 'blue')
