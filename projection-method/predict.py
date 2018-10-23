@@ -11,7 +11,7 @@ from project import eulerAnglesToRotationMatrix
 import numpy as np
 from motiontrack import Tracker
 from tracepoint import TracePath, TracePoint
-from classify import classifyDTW
+from classify import classifyDTW, computeSegment
 from vizutils import draw_tracepoints, plotPath
 from readvideo import getTracePathFromVideoFile
 
@@ -23,6 +23,7 @@ def prepData(data, R):
 
 def playVideo(filename):
 	video_segment = read_obj(filename)
+	print("Video is " + str(len(video_segment) * (1 / 29.97)) + " seconds long") # TODO hardcoded FPS
 	for frame_index in range(len(video_segment)):
 		frame = video_segment[frame_index]
 		frame = imutils.resize(frame, height=700)
@@ -77,7 +78,8 @@ def predict(filename, data, angle, preview):
 	plotPath(path_one, 1, 'g')
 	plotPath(path_test, 1, 'b')"""
 
-	print(classifyDTW(data, video_data))
+	#print(classifyDTW(data, video_data))
+	print(computeSegment(video_data, data, 3))
 
 if __name__ == "__main__":
 	predict()

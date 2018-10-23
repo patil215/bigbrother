@@ -30,20 +30,21 @@ def segment(video, dest, trace):
             if not ok:
                 sys.exit(1)
 
-            if startIndex >= 0:
-                videoFrames.append(rawFrame)
-
             frame = imutils.resize(rawFrame, height=700)
             cv2.imshow("Clipper", frame)
 
             key = cv2.waitKey(0) & 0xFF
             if key == ord("s"):
-                startIndex = frameIndex
                 videoFrames = []
+                startIndex = frameIndex
                 print("Starting at frame {0}".format(frameIndex))
                 continue
             elif key == ord("e"):
                 print("Ending at frame {0}".format(frameIndex))
+                for index in range(startIndex, frameIndex + 1):
+                    VIDEO_SOURCE.set(1, index)
+                    ok, rawFrame = VIDEO_SOURCE.read()
+                    videoFrames.append(rawFrame)
                 break
             elif key == ord("b"):
                 frameIndex = frameIndex - 1 if frameIndex > 0 else frameIndex
