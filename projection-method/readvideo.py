@@ -25,9 +25,9 @@ def getTracePathFromFrames(video_segment, height=700, fps=60):
 	return tracepath
 
 
-def getTracePathFromVideoFile(filename, fps=60):
+def getTracePathFromVideoFile(filename, height=700, fps=60):
 	video_segment = read_obj(filename)
-	return getTracePathFromFrames(video_segment, fps)
+	return getTracePathFromFrames(video_segment, height, fps)
 
 def saveTracePathFromVideoSource(video, initial_frame, end_frame, save_dest, height=700, fps=60):
 	source = cv2.VideoCapture(video)
