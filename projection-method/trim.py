@@ -37,14 +37,14 @@ def segment(video, dest, trace):
             if key == ord("s"):
                 videoFrames = []
                 startIndex = frameIndex
-                print("Starting at frame {0}".format(frameIndex))
+                print("Starting at frame {0}".format(startIndex))
                 continue
             elif key == ord("e"):
+                if frameIndex < startIndex:
+                    print("End index selected before start index. Please select a start index [s] first.")
+                    continue
+
                 print("Ending at frame {0}".format(frameIndex))
-                for index in range(startIndex, frameIndex + 1):
-                    VIDEO_SOURCE.set(1, index)
-                    ok, rawFrame = VIDEO_SOURCE.read()
-                    videoFrames.append(rawFrame)
                 break
             elif key == ord("b"):
                 frameIndex = frameIndex - 1 if frameIndex > 0 else frameIndex
@@ -60,26 +60,33 @@ def segment(video, dest, trace):
                 continue
             elif key == ord("q"):
                 sys.exit(1)
-
-        print(len(videoFrames))
+        
         # Prompt the user for the class to store the segment as
         class_name = easygui.enterbox("What is the class of this data? (zero, eight, etc)")
         segment_dir = dest + '/segments/' + class_name
         if not os.path.exists(segment_dir):
             os.makedirs(segment_dir)
-        print("Saving segment...")
-        write_obj(segment_dir + '/' + str(clipIndex), videoFrames)
+
+        print("Loading and saving {0} frame segment...".format(frameIndex + 1 - startIndex))
+        for index in range(startIndex, frameIndex + 1):
+            VIDEO_SOURCE.set(1, index)
+            ok, rawFrame = VIDEO_SOURCE.read()
+            videoFrames.append(rawFrame)
+
+        segment_filename = segment_dir + '/' + str(clipIndex)
+        write_obj(segment_filename, videoFrames)
+        print("{0} frame segment saved successfully to {1}".format(len(videoFrames), segment_filename))
 
         if trace:
             path = getTracePathFromFrames(videoFrames)
             path_dir = dest + '/paths/' + class_name
             if not os.path.exists(path_dir):
                 os.makedirs(path_dir)
-            print("Saving path")
-            write_obj(path_dir + '/' + str(clipIndex), path)
+            path_filename = path_dir + '/' + str(clipIndex)
+            write_obj(path_filename, path)
+            print("Path saved successfully to {0}".format(path_filename))
 
         clipIndex += 1
-
 
 if __name__ == '__main__':
     segment()
