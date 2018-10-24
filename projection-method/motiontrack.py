@@ -6,6 +6,7 @@ class Tracker:
 	def __init__(self, frame, tracker_type, height=800, bbox=None):
 		"""bbox = bounding box picked out of the image"""
 		self.tracker = self.pickTracker(tracker_type)
+		self.height = height
 
 		print("Original image has dimensions " + str(frame.shape))
 		scale = frame.shape[0] / height
@@ -28,7 +29,7 @@ class Tracker:
 				p1 = (int(bbox[0]), int(bbox[1]))
 				p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
 				cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
-				frame = imutils.resize(frame, height=700)
+				frame = imutils.resize(frame, height=self.height)
 				cv2.imshow("Tracking", frame)
 
 			return bbox

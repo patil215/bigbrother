@@ -26,9 +26,11 @@ def save(video_source, startIndex, endIndex, filename):
 
 @click.command()
 @click.argument("video")
+@click.option("-h", "--height", default=700, required=False, help="Video preview display height")
 @click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
 @click.option("-t", "--trace", is_flag=True, help="Enable trace path recording mode")
-def segment(video, dest, trace):
+@click.option("-f", "--fps", default=60, required=False, help="Framerate of the input video, used for trace paths")
+def segment(video, height, dest, trace, fps):
     VIDEO_SOURCE = cv2.VideoCapture(video)
 
     if not os.path.exists(dest):
@@ -46,7 +48,7 @@ def segment(video, dest, trace):
             if not ok:
                 sys.exit(1)
 
-            frame = imutils.resize(rawFrame, height=700)
+            frame = imutils.resize(rawFrame, height)
             cv2.imshow("Clipper", frame)
 
             key = cv2.waitKey(0) & 0xFF
@@ -99,7 +101,7 @@ def segment(video, dest, trace):
         saveThreads.append(save_thread)
 
         if trace:
-            path = getTracePathFromFrames(videoFrames)
+            path = getTracePathFromFrames(videoFrames, height, fps)
             path_dir = dest + '/paths/' + class_name
             if not os.path.exists(path_dir):
                 os.makedirs(path_dir)
