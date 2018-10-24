@@ -13,12 +13,14 @@ def getTracePathFromFrames(video_segment):
 
 		bbox = tracker.track(frame)
 
-		timestamp = (1000.0 / 29.97) * frame_index # TODO don't hardcode
+		timestamp = (1000.0 / 60) * frame_index # TODO don't hardcode
 
 		# Append center of bounding box
 		x = bbox[0] + (bbox[2] / 2) # TODO this might actually be Y, check it
 		y = bbox[1] + (bbox[3] / 2)
 		tracepath.add(TracePoint((x, y, 0), timestamp))
+
+	print(len(tracepath.path))
 
 	return tracepath
 

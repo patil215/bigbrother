@@ -61,6 +61,7 @@ def segment(video, dest, trace):
             elif key == ord("q"):
                 sys.exit(1)
 
+        print(len(videoFrames))
         # Prompt the user for the class to store the segment as
         class_name = easygui.enterbox("What is the class of this data? (zero, eight, etc)")
         segment_dir = dest + '/segments/' + class_name

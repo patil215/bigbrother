@@ -7,18 +7,12 @@ from tracepoint import TracePath
 
 
 def recursiveSegment(tracepath, candidates, num_digits_left, current_path_index=0, STEP_DURATION=50, FPS=29.97):
-	# current path index: 0 --> 30
-	# future path indices: [0, 30], [0, 35], ... [0, min + n * (step size, in terms of frames)]
-	# classify [0, 400], [0, 450] 							[0, 450], ...
-	#           min(0 ... 9)   						0 ... 9
-	# 			top10([400, 800], [400, 850...])	[450, 850], ...
-	# I return the 
 	if num_digits_left == 0:
 		return [(0, [])]
 
 	index_segments = []
 	MILLIS_PER_FRAME = 1000 / FPS
-	for end_index in range(current_path_index + int(400 / MILLIS_PER_FRAME), current_path_index + int(1000 / MILLIS_PER_FRAME), int((STEP_DURATION / 1000) * FPS)):
+	for end_index in range(current_path_index + int(400 / MILLIS_PER_FRAME), current_path_index + int(1000 / MILLIS_PER_FRAME), int((STEP_DURATION / 1000 * FPS))):
 		if end_index >= len(tracepath.path):
 			break
 		index_segments.append((current_path_index, end_index))
@@ -38,6 +32,7 @@ def recursiveSegment(tracepath, candidates, num_digits_left, current_path_index=
 				if key != "space":
 					candidates_to_consider[key] = candidates[key]
 		result, distance = classifyDTW(candidates_to_consider, path_slice)
+		print("{} {} {}".format(num_digits_left, result, distance))
 
 		# Get top 10 of next recursive indices
 		children = recursiveSegment(tracepath, candidates, num_digits_left - 1, index_segment[1] + 1)
@@ -77,5 +72,5 @@ def classifyDTW(candidates, path):
 		results[name] = minDist
 
 	sorted_distances = sorted(results.items(), key=operator.itemgetter(1))
-	#printScores(sorted_distances)
+	printScores(sorted_distances)
 	return (sorted_distances[0][0], sorted_distances[0][1])

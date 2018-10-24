@@ -19,8 +19,10 @@ class TracePoint:
 class TracePath:
     """Consists of a list of tracepoints."""
 
-    def __init__(self, path=[]):
+    def __init__(self, path=None):
         self.path = path
+        if not path:
+            self.path = []
 
     def add(self, tracepoint):
         self.path.append(tracepoint)

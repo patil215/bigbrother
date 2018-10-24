@@ -56,8 +56,17 @@ def predict(filename, data, angle, preview):
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
 
+	draw_tracepoints(data["zero"][0])
+	draw_tracepoints(data["zero"][1])
+
+	draw_tracepoints(data["one"][0])
+	draw_tracepoints(data["one"][1])
+	draw_tracepoints(data["seven"][0])
+	draw_tracepoints(data["seven"][1])
+	draw_tracepoints(data["eight"][0])
+	draw_tracepoints(data["eight"][1])
+
 	prepData(data, transform)
-	#draw_tracepoints(data["zero"][0])
 	#draw_tracepoints(data["zero"][1])
 	#draw_tracepoints(data["one"][0])
 	#draw_tracepoints(data["one"][1])
@@ -78,8 +87,8 @@ def predict(filename, data, angle, preview):
 	plotPath(path_one, 1, 'g')
 	plotPath(path_test, 1, 'b')"""
 
-	#print(classifyDTW(data, video_data))
-	print(computeSegment(video_data, data, 3))
+	print(classifyDTW(data, video_data))
+	#print(computeSegment(video_data, data, 3))
 
 if __name__ == "__main__":
 	predict()
