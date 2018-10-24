@@ -8,9 +8,10 @@ from readvideo import getTracePathFromFrames
 import os
 import easygui
 import sys
-import asyncio
+import threading
+from collections import deque
 
-async def save(video_source, startIndex, endIndex, filename):
+def save(video_source, startIndex, endIndex, filename):
     video = cv2.VideoCapture(video_source)
     videoFrames = []
 
@@ -35,8 +36,7 @@ def segment(video, dest, trace):
 
     frameIndex = 0
     clipIndex = 0
-    saveTasks = []
-    loop = asyncio.get_event_loop()
+    saveThreads = deque()
 
     while True:
         startIndex = -1
@@ -75,8 +75,8 @@ def segment(video, dest, trace):
                 frameIndex = frameIndex - 20 if frameIndex > 20 else frameIndex
                 continue
             elif key == ord("q"):
-                for task in saveTasks:
-                    loop.run_until_complete(task)
+                for thread in saveThreads:
+                    thread.join()
                 sys.exit(0)
         
         # Prompt the user for the class to store the segment as
@@ -85,9 +85,18 @@ def segment(video, dest, trace):
         if not os.path.exists(segment_dir):
             os.makedirs(segment_dir)
 
+        while len(saveThreads) > 0:
+            if not saveThreads[0].is_alive():
+                doneThread = saveThreads.popleft()
+                doneThread.join()
+            else:
+                break
+
         print("Loading and saving {0} frame segment...".format(frameIndex + 1 - startIndex))
         segment_filename = segment_dir + '/' + str(clipIndex)
-        saveTasks.append(loop.create_task(save(video, startIndex, frameIndex + 1, segment_filename)))
+        save_thread = threading.Thread(target=save, args=(video, startIndex, frameIndex + 1, segment_filename))
+        save_thread.start()
+        saveThreads.append(save_thread)
 
         if trace:
             path = getTracePathFromFrames(videoFrames)
