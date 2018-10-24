@@ -14,9 +14,13 @@ class Tracker:
 
 		# No bbox, so prompt for it
 		if bbox == None:
-			bbox = cv2.selectROI(imutils.resize(frame, height=height), False)
+			bbox = cv2.selectROI("Select ROI", imutils.resize(frame, height=height), False)
+			cv2.destroyWindow("Select ROI")
+			cv2.waitKey(1)
+
 			print("Old bbox is " + str(bbox))
-			new_bbox = (bbox[0] * scale, bbox[1] * scale, bbox[2] * scale, bbox[3] * scale)
+			new_bbox = (int(bbox[0] * scale), int(bbox[1] * scale), 
+						int(bbox[2] * scale), int(bbox[3] * scale))
 			bbox = new_bbox
 			print("New bbox is " + str(bbox))
 

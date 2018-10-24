@@ -4,7 +4,7 @@ import pickle
 import sys
 from fileutils import read_obj, write_obj
 import click
-from readvideo import getTracePathFromFrames
+from readvideo import saveTracePathFromVideoSource
 import os
 import easygui
 import sys
@@ -107,30 +107,11 @@ def segment(video, height, dest, trace, fps):
                 os.makedirs(path_dir)
             path_filename = path_dir + '/' + str(clipIndex)
 
-            videoFrames = []
-            for index in range(startIndex, frameIndex + 1):
-                VIDEO_SOURCE.set(1, index)
-                ok, rawFrame = VIDEO_SOURCE.read()
-                videoFrames.append(rawFrame)
-
-            path = None
-            while True:
-                path = getTracePathFromFrames(videoFrames, height, fps)
-                draw_tracepoints(path)
-                print("[Enter] to save, [r] to redraw")
-                key = cv2.waitKey(0) & 0xFF
-
-                if key == ord('\r'):
-                    break
-                elif key == ord('r'):
-                    continue
-                elif key == ord("q"):
-                    for thread in saveThreads:
-                        thread.join()
-                    sys.exit(0)
-
-            write_obj(path_filename, path)
-            print("Path saved successfully to {0}".format(path_filename))
+            path_save_thread = saveTracePathFromVideoSource(video,
+                initial_frame=startIndex, frames_count=(frameIndex + 1) - startIndex,
+                save_dest=path_filename, height=height, fps=fps)
+            path_save_thread.start()
+            saveThreads.append(path_save_thread)
 
         clipIndex += 1
 
