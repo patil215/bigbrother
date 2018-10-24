@@ -16,13 +16,13 @@ def save(video_source, startIndex, endIndex, filename):
     video = cv2.VideoCapture(video_source)
     videoFrames = []
 
-    for index in range(startIndex, endIndex):
+    for index in range(startIndex, endIndex + 1):
         video.set(1, index)
         ok, rawFrame = video.read()
         videoFrames.append(rawFrame)
     
     write_obj(filename, videoFrames)
-    print("{0} frame segment saved successfully to {1}".format(len(videoFrames), filename))
+    print("[{0} - {1}] {2} frame segment saved successfully to {3}".format(startIndex, endIndex, len(videoFrames), filename))
 
 
 @click.command()
@@ -56,14 +56,14 @@ def segment(video, height, dest, trace, fps):
             if key == ord("s"):
                 videoFrames = []
                 startIndex = frameIndex
-                print("Starting at frame {0}".format(startIndex))
+                print("[{0} - ?] Starting at frame {0}".format(startIndex))
                 continue
             elif key == ord("e"):
                 if frameIndex < startIndex:
                     print("End index selected before start index. Please select a start index [s] first.")
                     continue
 
-                print("Ending at frame {0}".format(frameIndex))
+                print("[{0} - {1}] Ending at frame {1}".format(startIndex, frameIndex))
                 break
             elif key == ord("b"):
                 frameIndex = frameIndex - 1 if frameIndex > 0 else frameIndex
@@ -95,9 +95,9 @@ def segment(video, height, dest, trace, fps):
             else:
                 break
 
-        print("Loading and saving {0} frame segment...".format(frameIndex + 1 - startIndex))
+        print("[{0} - {1}] Loading and saving {2} frame segment...".format(startIndex, frameIndex, frameIndex + 1 - startIndex))
         segment_filename = segment_dir + '/' + str(clipIndex)
-        save_thread = threading.Thread(target=save, args=(video, startIndex, frameIndex + 1, segment_filename))
+        save_thread = threading.Thread(target=save, args=(video, startIndex, frameIndex, segment_filename))
         save_thread.start()
         saveThreads.append(save_thread)
 
@@ -108,7 +108,7 @@ def segment(video, height, dest, trace, fps):
             path_filename = path_dir + '/' + str(clipIndex)
 
             path_save_thread = saveTracePathFromVideoSource(video,
-                initial_frame=startIndex, frames_count=(frameIndex + 1) - startIndex,
+                initial_frame=startIndex, end_frame=frameIndex,
                 save_dest=path_filename, height=height, fps=fps)
             path_save_thread.start()
             saveThreads.append(path_save_thread)
