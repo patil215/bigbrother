@@ -1,5 +1,5 @@
 from scipy.spatial.distance import euclidean
-from fastdtw import fastdtw
+# from fastdtw import fastdtw
 from dtw import dtw
 from numpy.linalg import norm
 import operator
