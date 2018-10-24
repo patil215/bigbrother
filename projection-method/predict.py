@@ -48,44 +48,13 @@ def predict(filename, data, angle, preview):
 
 	data = readData(data)
 
-	#draw_tracepoints(data["zero"][0])
-	#draw_tracepoints(data["zero"][1])
-	#draw_tracepoints(data["one"][0])
-	#draw_tracepoints(data["one"][1])
-
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
-
-	draw_tracepoints(data["zero"][0])
-	draw_tracepoints(data["zero"][1])
-
-	draw_tracepoints(data["one"][0])
-	draw_tracepoints(data["one"][1])
-	draw_tracepoints(data["seven"][0])
-	draw_tracepoints(data["seven"][1])
-	draw_tracepoints(data["eight"][0])
-	draw_tracepoints(data["eight"][1])
-
 	prepData(data, transform)
-	#draw_tracepoints(data["zero"][1])
-	#draw_tracepoints(data["one"][0])
-	#draw_tracepoints(data["one"][1])
 
 	video_data = getTracePathFromVideoFile(filename)
+	#video_data.transform(transform)
 	video_data.normalize()
-	#draw_tracepoints(video_data)
-
-	"""plotPath(video_data, 0, 'red')
-	plotPath(video_data, 1, 'blue')
-	plotPath(data["zero"][0], 0, 'yellow')
-	plotPath(data["zero"][0], 1, 'green')
-	plotPath(data["one"][0], 0, 'black')
-	plotPath(data["one"][0], 1, 'brown')
-	plt.show()"""
-
-	"""plotPath(path_zero, 1, 'r')
-	plotPath(path_one, 1, 'g')
-	plotPath(path_test, 1, 'b')"""
 
 	print(classifyDTW(data, video_data))
 	#print(computeSegment(video_data, data, 3))
