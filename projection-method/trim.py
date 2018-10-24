@@ -8,6 +8,20 @@ from readvideo import getTracePathFromFrames
 import os
 import easygui
 import sys
+import asyncio
+
+async def save(video_source, startIndex, endIndex, filename):
+    video = cv2.VideoCapture(video_source)
+    videoFrames = []
+
+    for index in range(startIndex, endIndex):
+        video.set(1, index)
+        ok, rawFrame = video.read()
+        videoFrames.append(rawFrame)
+    
+    write_obj(filename, videoFrames)
+    print("{0} frame segment saved successfully to {1}".format(len(videoFrames), filename))
+
 
 @click.command()
 @click.argument("video")
@@ -21,6 +35,8 @@ def segment(video, dest, trace):
 
     frameIndex = 0
     clipIndex = 0
+    saveTasks = []
+    loop = asyncio.get_event_loop()
 
     while True:
         startIndex = -1
@@ -59,7 +75,9 @@ def segment(video, dest, trace):
                 frameIndex = frameIndex - 20 if frameIndex > 20 else frameIndex
                 continue
             elif key == ord("q"):
-                sys.exit(1)
+                for task in saveTasks:
+                    loop.run_until_complete(task)
+                sys.exit(0)
         
         # Prompt the user for the class to store the segment as
         class_name = easygui.enterbox("What is the class of this data? (zero, eight, etc)")
@@ -68,14 +86,8 @@ def segment(video, dest, trace):
             os.makedirs(segment_dir)
 
         print("Loading and saving {0} frame segment...".format(frameIndex + 1 - startIndex))
-        for index in range(startIndex, frameIndex + 1):
-            VIDEO_SOURCE.set(1, index)
-            ok, rawFrame = VIDEO_SOURCE.read()
-            videoFrames.append(rawFrame)
-
         segment_filename = segment_dir + '/' + str(clipIndex)
-        write_obj(segment_filename, videoFrames)
-        print("{0} frame segment saved successfully to {1}".format(len(videoFrames), segment_filename))
+        saveTasks.append(loop.create_task(save(video, startIndex, frameIndex + 1, segment_filename)))
 
         if trace:
             path = getTracePathFromFrames(videoFrames)
