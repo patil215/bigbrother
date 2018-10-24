@@ -10,6 +10,7 @@ import easygui
 import sys
 import threading
 from collections import deque
+from vizutils import draw_tracepoints
 
 def save(video_source, startIndex, endIndex, filename):
     video = cv2.VideoCapture(video_source)
@@ -48,7 +49,7 @@ def segment(video, height, dest, trace, fps):
             if not ok:
                 sys.exit(1)
 
-            frame = imutils.resize(rawFrame, height)
+            frame = imutils.resize(rawFrame, height=height)
             cv2.imshow("Clipper", frame)
 
             key = cv2.waitKey(0) & 0xFF
@@ -101,11 +102,33 @@ def segment(video, height, dest, trace, fps):
         saveThreads.append(save_thread)
 
         if trace:
-            path = getTracePathFromFrames(videoFrames, height, fps)
             path_dir = dest + '/paths/' + class_name
             if not os.path.exists(path_dir):
                 os.makedirs(path_dir)
             path_filename = path_dir + '/' + str(clipIndex)
+
+            videoFrames = []
+            for index in range(startIndex, frameIndex + 1):
+                VIDEO_SOURCE.set(1, index)
+                ok, rawFrame = VIDEO_SOURCE.read()
+                videoFrames.append(rawFrame)
+
+            path = None
+            while True:
+                path = getTracePathFromFrames(videoFrames, height, fps)
+                draw_tracepoints(path)
+                print("[Enter] to save, [r] to redraw")
+                key = cv2.waitKey(0) & 0xFF
+
+                if key == ord('\r'):
+                    break
+                elif key == ord('r'):
+                    continue
+                elif key == ord("q"):
+                    for thread in saveThreads:
+                        thread.join()
+                    sys.exit(0)
+
             write_obj(path_filename, path)
             print("Path saved successfully to {0}".format(path_filename))
 

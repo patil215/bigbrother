@@ -16,7 +16,7 @@ def create_blank(width, height, rgb_color=(0, 0, 0)):
 
     return image
 
-def draw_tracepoints(tracepath, scale=1.0, fit_canvas=True, color=(255, 255, 255), frame=None, title="canvas"):
+def draw_tracepoints(tracepath, scale=1.0, fit_canvas=True, color=(255, 255, 255), frame=None, title="Tracepath"):
 	frame = create_blank(512, 512, rgb_color=(0, 0, 0))
 
 	"""Given a tracepath, draw the path on the given frame."""
@@ -40,7 +40,7 @@ def draw_tracepoints(tracepath, scale=1.0, fit_canvas=True, color=(255, 255, 255
 		cv2.line(frame, draw_points[i], draw_points[i + 1], color)
 
 	cv2.imshow(title, frame)
-	cv2.waitKey(0)
+	# cv2.waitKey(0)
 
 def plotPath(path, coordinate, color):
     pts = path.time_sequence(coordinate)

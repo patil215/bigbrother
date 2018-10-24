@@ -3,7 +3,7 @@ import imutils
 
 class Tracker:
 
-	def __init__(self, frame, tracker_type, height=800, bbox=None):
+	def __init__(self, frame, tracker_type, height=700, bbox=None):
 		"""bbox = bounding box picked out of the image"""
 		self.tracker = self.pickTracker(tracker_type)
 		self.height = height
