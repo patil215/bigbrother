@@ -57,6 +57,8 @@ def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 
 	distance = math.sqrt(dist_x ** 2 + dist_y ** 2)
 	return distance
+	#distance = abs(dist_x) + abs(dist_y)
+	#return distance
 
 def printScores(sorted_distances):
 	for item in sorted_distances:
@@ -70,17 +72,23 @@ def classifyDTW(candidates, path):
 	"""
 	x_actual = path.sequence(0)
 	y_actual = path.sequence(1)
+	#results = []
 	results = {}
 	for name in candidates.keys():
 		if name == 'space':
 			continue
 
-		candidate_path = candidates[name][0]
-
-		minDist = min([computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
-			for candidate in candidates[name]])
+		minDist =sum([computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
+			for candidate in candidates[name]]) / len(candidates[name])
 		results[name] = minDist
 
+		#for candidate in candidates[name]:
+			#dist = computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
+			#results.append((dist, name))
+
 	sorted_distances = sorted(results.items(), key=operator.itemgetter(1))
-	#printScores(sorted_distances)
+	printScores(sorted_distances)
+
+	#sorted_distances = sorted(results)
+	#print(sorted_distances[:5])
 	return (sorted_distances[0][0], sorted_distances[0][1])
