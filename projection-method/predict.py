@@ -11,15 +11,10 @@ from project import eulerAnglesToRotationMatrix
 import numpy as np
 from motiontrack import Tracker
 from tracepoint import TracePath, TracePoint
-from classify import classifyDTW, computeSegment
+from classify import classifyDTW, computeSegment, prepData
 from vizutils import draw_tracepoints, plotPath
 from readvideo import getTracePathFromVideoFile
 
-def prepData(data, R):
-	for category in data:
-		for tracepath in data[category]:
-			tracepath.transform(R)
-			tracepath.normalize()
 
 def playVideo(filename, height, fps):
 	video_segment = read_obj(filename)
@@ -41,11 +36,11 @@ def predict(filename, height, fps, data, angle, preview):
 	if not os.path.exists(filename):
 		print("Invalid filename provided!")
 		return
-	if not os.path.exists(data):
-		print("Invalid data directory provided!")
-		return
 	if preview:
 		playVideo(filename, height, fps)
+		return
+	if not os.path.exists(data):
+		print("Invalid data directory provided!")
 		return
 
 	data = readData(data)

@@ -24,3 +24,12 @@ Times to draw (seconds):
 
 .4 to 1 second (for our test data)
 Practically, probably .3 to 1 seconds
+
+Potential sources of problems: 
+
+- missing up/down 3D space
+- wrong angles?
+- not enough data
+- distance function - (x + y)^2 bad?
+- tracking noise - bad motion tracking?
+- normalization destroying notion of size differences / scale

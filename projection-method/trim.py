@@ -31,14 +31,15 @@ def save(video_source, startIndex, endIndex, filename):
 @click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
 @click.option("-t", "--trace", is_flag=True, help="Enable trace path recording mode")
 @click.option("-f", "--fps", default=60, required=False, help="Framerate of the input video, used for trace paths")
-def segment(video, height, dest, trace, fps):
+@click.option("-s", "--start", default=0, required=False, help="Start at this index")
+def segment(video, height, dest, trace, fps, start):
     VIDEO_SOURCE = cv2.VideoCapture(video)
 
     if not os.path.exists(dest):
         os.makedirs(dest)
 
     frameIndex = 0
-    clipIndex = 0
+    clipIndex = start
     saveThreads = deque()
 
     while True:

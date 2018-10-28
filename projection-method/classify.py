@@ -4,6 +4,13 @@ from dtw import dtw
 from numpy.linalg import norm
 import operator
 from tracepoint import TracePath
+import math
+
+def prepData(data, R):
+	for category in data:
+		for tracepath in data[category]:
+			tracepath.transform(R)
+			tracepath.normalize()
 
 
 def recursiveSegment(tracepath, candidates, num_digits_left, current_path_index=0, STEP_DURATION=50, FPS=29.97):
@@ -48,7 +55,7 @@ def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	dist_x, cost_x, acc_x, path_x = dtw(x_actual, x_test, dist=lambda x, y: abs(x - y))
 	dist_y, cost_y, acc_y, path_y = dtw(y_actual, y_test, dist=lambda x, y: abs(x - y))
 
-	distance = (dist_x + dist_y)**2
+	distance = math.sqrt(dist_x ** 2 + dist_y ** 2)
 	return distance
 
 def printScores(sorted_distances):
@@ -65,6 +72,9 @@ def classifyDTW(candidates, path):
 	y_actual = path.sequence(1)
 	results = {}
 	for name in candidates.keys():
+		if name == 'space':
+			continue
+
 		candidate_path = candidates[name][0]
 
 		minDist = min([computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
@@ -72,5 +82,5 @@ def classifyDTW(candidates, path):
 		results[name] = minDist
 
 	sorted_distances = sorted(results.items(), key=operator.itemgetter(1))
-	printScores(sorted_distances)
+	#printScores(sorted_distances)
 	return (sorted_distances[0][0], sorted_distances[0][1])

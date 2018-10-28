@@ -1,0 +1,70 @@
+import click
+import imutils
+from fileutils import readData, read_obj, readVideos, write_obj
+import matplotlib.pyplot as plt
+import time
+from time import sleep
+import cv2
+import os
+import math
+from project import eulerAnglesToRotationMatrix
+import numpy as np
+from motiontrack import Tracker
+from tracepoint import TracePath, TracePoint
+from classify import classifyDTW, computeSegment, prepData
+from vizutils import draw_tracepoints, plotPath
+from readvideo import getTracePathFromFrames
+
+
+@click.command()
+@click.argument('test_dir')
+@click.option('-h', '--height', help="Video display height", default=700)
+@click.option('-f', '--fps', help="Input video framerate", default=29.97)
+@click.option('-d', '--data', help="Location of the data directory", default="data")
+@click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=(0, 0, 0))
+def predict(test_dir, height, fps, data, angle):
+	if not os.path.exists(test_dir):
+		print("Invalid test directory provided!")
+		return
+	if not os.path.exists(data):
+		print("Invalid data directory provided!")
+		return
+
+	videos = readVideos(test_dir)
+	data = readData(data)
+
+	x, y, z = [math.radians(int(d)) for d in angle]
+	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
+	prepData(data, transform)
+
+	correct = 0
+	total = 0
+	# Go through videos and classify / score them!!!1
+	for video_class in videos:
+		class_videos = videos[video_class]
+		for video_name in class_videos:
+			video = class_videos[video_name]
+
+			metadata_path = test_dir + '/' + video_class + '/.' + video_name + '.meta'
+			bbox = read_obj(metadata_path)
+			if not bbox:
+				# Prompt for bounding box and store as metadata
+				tracker = Tracker(video[0])
+				write_obj(metadata_path, tracker.bbox)
+			else:
+				tracker = Tracker(video[0], bbox=bbox)
+
+			video_data = getTracePathFromFrames(video, height=height, fps=fps, tracker=tracker)
+			video_data.normalize()
+
+			actual = classifyDTW(data, video_data)
+			print("Expected: {} Actual: {}".format(video_class, actual[0]))
+			if actual[0] == video_class:
+				correct += 1
+			total += 1
+
+	print("Correct: {} Total: {}".format(correct, total))
+
+
+if __name__ == "__main__":
+	predict()
