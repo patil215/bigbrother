@@ -38,6 +38,7 @@ def predict(test_dir, height, fps, data, angle):
 	prepData(data, transform)
 
 	correct = 0
+	correct_top3 = 0
 	total = 0
 	# Go through videos and classify / score them!!!1
 	for video_class in videos:
@@ -58,12 +59,15 @@ def predict(test_dir, height, fps, data, angle):
 			video_data.normalize()
 
 			actual = classifyDTW(data, video_data)
-			print("Expected: {} Actual: {}".format(video_class, actual[0]))
-			if actual[0] == video_class:
+			top3 = [thing[0] for thing in actual[:3]]
+			print("Expected: {} Actual: {}".format(video_class, actual[0][0]))
+			if actual[0][0] == video_class:
 				correct += 1
+			if video_class in top3:
+				correct_top3 += 1
 			total += 1
 
-	print("Correct: {} Total: {}".format(correct, total))
+	print("Correct: {} Correct (top 3): {} Total: {}".format(correct, correct_top3, total))
 
 
 if __name__ == "__main__":

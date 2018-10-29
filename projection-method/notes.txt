@@ -33,3 +33,12 @@ Potential sources of problems:
 - distance function - (x + y)^2 bad?
 - tracking noise - bad motion tracking?
 - normalization destroying notion of size differences / scale
+
+
+PLANS FOR IMPROVEMENT
+- Record up / down motion in ground truth data, for use in projection
+- Find a definitive way to get the right angles instead of having to guess
+- Take more data
+- Look into using X and Y relative scale instead of just normalizing everything
+- Look into using different distance metrics
+- Look into using time as a reference

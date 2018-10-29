@@ -8,9 +8,7 @@ class Tracker:
 		self.tracker = self.pickTracker(tracker_type)
 		self.height = height
 
-		print("Original image has dimensions " + str(frame.shape))
 		scale = frame.shape[0] / height
-		print("Scale to show is " + str(scale))
 
 		# No bbox, so prompt for it
 		if bbox == None:
