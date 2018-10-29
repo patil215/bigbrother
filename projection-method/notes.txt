@@ -42,3 +42,4 @@ PLANS FOR IMPROVEMENT
 - Look into using X and Y relative scale instead of just normalizing everything
 - Look into using different distance metrics
 - Look into using time as a reference
+- Investigate using different resolutions / framerates / positions that simplify the security model
