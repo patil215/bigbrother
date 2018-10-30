@@ -1,6 +1,7 @@
 import pickle
 import os
 from collections import defaultdict
+import cv2
 
 def read_obj(path):
 	if not os.path.exists(path):
@@ -8,8 +9,27 @@ def read_obj(path):
 	return pickle.load(open(path, 'rb'))
 
 def write_obj(path, object):
-    with open(path, 'wb') as output:
-        pickle.dump(object, output, pickle.HIGHEST_PROTOCOL)
+	if not os.path.exists(os.path.dirname(path)):
+		try:
+			os.makedirs(os.path.dirname(path))
+		except OSError as exc: # Guard against race condition
+			if exc.errno != errno.EEXIST:
+				raise
+
+	with open(path, 'wb') as output:
+		pickle.dump(object, output, pickle.HIGHEST_PROTOCOL)
+
+def save_video_clip(video_source, startIndex, endIndex, filename):
+	video = cv2.VideoCapture(video_source)
+	videoFrames = []
+
+	for index in range(startIndex, endIndex + 1):
+		video.set(1, index)
+		ok, rawFrame = video.read()
+		videoFrames.append(rawFrame)
+	
+	write_obj(filename, videoFrames)
+	print("[{0} - {1}] {2} frame segment saved successfully to {3}".format(startIndex, endIndex, len(videoFrames), filename))
 
 def readData(data_dir):
 	data_dict = defaultdict(list)

@@ -28,14 +28,6 @@ def getTracePathFromVideoFile(filename, height=700, fps=60):
 	video_segment = read_obj(filename)
 	return getTracePathFromFrames(video_segment, height, fps)
 
-def saveTracePathFromVideoSource(video, initial_frame, end_frame, save_dest, height=700, fps=60):
-	source = cv2.VideoCapture(video)
-	source.set(1, initial_frame)
-	ok, rawFrame = source.read()
-	tracker = Tracker(rawFrame, 'CSRT', height)
-
-	return threading.Thread(target=asyncTrackSave, args=(source, initial_frame, end_frame, tracker, save_dest, fps))
-
 def asyncTrackSave(source, initial_frame, end_frame, tracker, save_dest, fps=60):
 	print("[{0} - {1}] Beginning tracking...".format(initial_frame, end_frame))
 	tracepath = TracePath()
