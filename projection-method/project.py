@@ -1,11 +1,5 @@
 import numpy as np
 import math
-import pickle
-import cv2
-from tracepoint import TracePoint
-from vizutils import draw_tracepoints
-from classify import classifyDTW
-from fileutils import read_obj, write_obj
 
 # Calculates Rotation Matrix given euler angles.
 # Theta is a 3D vector with X, Y, and Z rotation amounts (in degrees)

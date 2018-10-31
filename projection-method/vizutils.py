@@ -1,6 +1,11 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import click
+from fileutils import read_obj
+import sys
+from project import eulerAnglesToRotationMatrix
+import math
 
 def create_blank(width, height, rgb_color=(0, 0, 0)):
     """Create new image(numpy array) filled with certain color in RGB"""
@@ -45,3 +50,27 @@ def draw_tracepoints(tracepath, scale=1.0, fit_canvas=True, color=(255, 255, 255
 def plotPath(path, coordinate, color):
     pts = path.time_sequence(coordinate)
     plt.plot([p[0] for p in pts], [p[1] for p in pts], color)
+
+@click.command()
+@click.argument('filename')
+@click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=(0, 0, 0))
+def display_tracepoints(filename, angle):
+	tracepath = read_obj(filename)
+	if tracepath is None:
+		print("The specified file does not exist.")
+		sys.exit(1)
+
+	draw_tracepoints(tracepath)
+
+	if not angle == (0, 0, 0):
+		x, y, z = [math.radians(int(d)) for d in angle]
+		R = eulerAnglesToRotationMatrix(np.array([x, y, z]))
+		tracepath.transform(R)
+		tracepath.normalize()
+
+		draw_tracepoints(tracepath, title="Tracepath Transformed to {0}".format(angle))
+
+	cv2.waitKey(0)
+
+if __name__ == "__main__":
+	display_tracepoints()
