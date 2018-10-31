@@ -2,10 +2,10 @@ import cv2
 import imutils
 import pickle
 import sys
-from fileutils import read_obj, write_obj, save_video_clip
+from fileutils import read_obj, write_obj, save_video_clip, load_video_clip
 from motiontrack import Tracker
 import click
-from readvideo import asyncTrackSave
+from readvideo import asyncTrackSave, getTracePathFromFrames
 import os
 import easygui
 import sys
@@ -16,11 +16,11 @@ from tracepoint import TracePath, TracePoint
 
 def make_process_segment_thread(video_file, dest_path, start_index, end_index):
     return threading.Thread(
-        target=save_video_clip, 
+        target=save_video_clip,
         args=(video_file, start_index, end_index, dest_path)
     )
 
-def make_process_path_thread(video_file, dest_path, start_index, end_index, height=700, fps=29.97):
+def make_process_path_thread(video_file, dest_path, start_index, end_index, height=700, fps=60):
     source = cv2.VideoCapture(video_file)
     source.set(1, start_index)
     ok, raw_frame = source.read()
@@ -29,7 +29,7 @@ def make_process_path_thread(video_file, dest_path, start_index, end_index, heig
     return threading.Thread(
         target=asyncTrackSave,
         args=(
-            source, 
+            source,
             start_index,
             end_index,
             tracker,
@@ -55,11 +55,23 @@ def merge_tracepaths(to_merge):
 
         print("Merged tracepaths at {} and {} ".format(path_save_video_dest, path_save_vertical_dest))
 
+def safe_quit(threads, tracepaths_to_merge, exit_code):
+    print("Joining threads in order to quit...")
+    for thread in threads:
+        thread.join()
+
+    print("Merging tracepath...")
+    # Now, we need to merge any TracePaths if we have the VERTICAL flag passed in.
+    merge_tracepaths(tracepaths_to_merge)
+
+    sys.exit(0)
+
 @click.command()
 @click.argument("video")
 @click.option("-h", "--height", default=700, required=False, help="Video preview display height")
 @click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
 @click.option("-t", "--trace", is_flag=True, help="Enable trace path recording mode")
+@click.option("-d", "--debug", is_flag=True, help="Enable trace path debugging", default=False, required=False)
 @click.option("-f", "--fps", default=60, required=False, help="Framerate of the input video, used for trace paths")
 @click.option("-s", "--start", default=0, required=False, help="Start at this index")
 @click.option("-v", "--vertical", default=None, required=False,
@@ -67,7 +79,7 @@ def merge_tracepaths(to_merge):
         It is assumed the length of the vertical video matches the original video.
         It is also assumed that the framerate of the vertical video is the same as the original.
         """)
-def segment(video, height, dest, trace, fps, start, vertical):
+def segment(video, height, dest, trace, debug, fps, start, vertical):
     """ TODO FOR PROPER CORRELATION:
     - Make aspect ratio normalization work with Z
     - Account for different scales with the XY and Z
@@ -131,16 +143,8 @@ def segment(video, height, dest, trace, fps, start, vertical):
                 frameIndex = frameIndex - 20 if frameIndex > 20 else frameIndex
                 continue
             elif key == ord("q"):
-                print("Joining threads in order to quit...")
-                for thread in threads:
-                    thread.join()
+                safe_quit(threads, tracepath_files_to_merge, 0)
 
-                print("Merging tracepath...")
-                # Now, we need to merge any TracePaths if we have the VERTICAL flag passed in.
-                merge_tracepaths(tracepath_files_to_merge)
-
-                sys.exit(0)
-        
         # Prompt the user for the class to store the segment as
         class_name = easygui.enterbox("What is the class of this data? (zero, eight, etc)")
 
@@ -167,31 +171,54 @@ def segment(video, height, dest, trace, fps, start, vertical):
         if trace:
             # Get the TracePath for the video segment
             path_save_video_dest = dest + '/paths/' + class_name + '/' + str(clipIndex)
-            path_save_video_thread = make_process_path_thread(
-                video, 
-                path_save_video_dest,
-                startIndex,
-                frameIndex,
-                fps=fps
-            )
-            path_save_video_thread.start()
-            threads.append(path_save_video_thread)
 
-            if VIDEO_VERTICAL:
-                # We need to find the TracePath for both segments, and create a TracePath with both.
-                # Unfortunately, this is difficult to multithread.
-                path_save_vertical_dest = dest + '/paths_vertical/' + class_name + '/' + str(clipIndex)
-                path_save_vertical_thread = make_process_path_thread(
-                    vertical,
-                    path_save_vertical_dest,
+            # When debugging, the bounding box can be redrawn until satisfied
+            # with the resulting trace. Confirm with Enter.
+            if debug:
+                print("DEBUG trace path mode enabled. Loading segment...")
+                target_segment = load_video_clip(video, startIndex, frameIndex)
+                proposed_path = None
+
+                while True:
+                    proposed_path = getTracePathFromFrames(target_segment, height, fps)
+                    draw_tracepoints(proposed_path, frame="Proposed Path")
+
+                    key = cv2.waitKey(0) & 0xFF
+                    if key == ord('q'):
+                        safe_quit(threads, tracepath_files_to_merge, 0)
+                    if key == ord('\r'):
+                        cv2.destroyWindow("Proposed Path")
+                        cv2.waitKey(1)
+                        break
+
+                write_obj(path_save_video_dest, proposed_path)
+
+            # If not debugging, trace and save asynchronously
+            else:
+                path_save_video_thread = make_process_path_thread(
+                    video,
+                    path_save_video_dest,
                     startIndex,
                     frameIndex,
+                    fps=fps
                 )
-                path_save_vertical_thread.start()
-                threads.append(path_save_vertical_thread)
+                path_save_video_thread.start()
+                threads.append(path_save_video_thread)
 
-                tracepath_files_to_merge.append((path_save_video_dest, path_save_vertical_dest))
+        if trace and VIDEO_VERTICAL:
+            # We need to find the TracePath for both segments, and create a TracePath with both.
+            # Unfortunately, this is difficult to multithread.
+            path_save_vertical_dest = dest + '/paths_vertical/' + class_name + '/' + str(clipIndex)
+            path_save_vertical_thread = make_process_path_thread(
+                vertical,
+                path_save_vertical_dest,
+                startIndex,
+                frameIndex,
+            )
+            path_save_vertical_thread.start()
+            threads.append(path_save_vertical_thread)
 
+            tracepath_files_to_merge.append((path_save_video_dest, path_save_vertical_dest))
 
         clipIndex += 1
 
