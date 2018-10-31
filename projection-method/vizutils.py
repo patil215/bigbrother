@@ -60,7 +60,7 @@ def display_tracepoints(filename, angle):
 		print("The specified file does not exist.")
 		sys.exit(1)
 
-	draw_tracepoints(tracepath)
+	draw_tracepoints(tracepath, title="{0}".format(filename))
 
 	if not angle == (0, 0, 0):
 		x, y, z = [math.radians(int(d)) for d in angle]
@@ -68,7 +68,7 @@ def display_tracepoints(filename, angle):
 		tracepath.transform(R)
 		tracepath.normalize()
 
-		draw_tracepoints(tracepath, title="Tracepath Transformed to {0}".format(angle))
+		draw_tracepoints(tracepath, title="{0} transformed to {0}".format(filename, angle))
 
 	cv2.waitKey(0)
 
