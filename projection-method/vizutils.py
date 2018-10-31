@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import imutils
 import matplotlib.pyplot as plt
 import click
 from fileutils import read_obj
@@ -50,6 +51,17 @@ def draw_tracepoints(tracepath, scale=1.0, fit_canvas=True, color=(255, 255, 255
 def plotPath(path, coordinate, color):
     pts = path.time_sequence(coordinate)
     plt.plot([p[0] for p in pts], [p[1] for p in pts], color)
+
+def request_bounding_box(frame, height=700):
+	scale = frame.shape[0] / height
+
+	bbox = cv2.selectROI("Select ROI", imutils.resize(frame, height=height), False)
+	cv2.destroyWindow("Select ROI")
+	cv2.waitKey(1)
+
+	new_bbox = (int(bbox[0] * scale), int(bbox[1] * scale),
+				int(bbox[2] * scale), int(bbox[3] * scale))
+	return new_bbox
 
 @click.command()
 @click.argument('filename')
