@@ -1,5 +1,6 @@
 import cv2
 import imutils
+from vizutils import request_bounding_box
 
 class Tracker:
 
@@ -7,22 +8,7 @@ class Tracker:
 		"""bbox = bounding box picked out of the image"""
 		self.tracker = self.pickTracker(tracker_type)
 		self.height = height
-
-		scale = frame.shape[0] / height
-
-		# No bbox, so prompt for it
-		if bbox == None:
-			bbox = cv2.selectROI("Select ROI", imutils.resize(frame, height=height), False)
-			cv2.destroyWindow("Select ROI")
-			cv2.waitKey(1)
-
-			print("Old bbox is " + str(bbox))
-			new_bbox = (int(bbox[0] * scale), int(bbox[1] * scale), 
-						int(bbox[2] * scale), int(bbox[3] * scale))
-			bbox = new_bbox
-			print("New bbox is " + str(bbox))
-
-		self.bbox = bbox
+		self.bbox = bbox if bbox is not None else request_bounding_box(frame, height)
 		ok = self.tracker.init(frame, bbox)
 
 	def track(self, frame, display=False):

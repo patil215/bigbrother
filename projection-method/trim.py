@@ -1,18 +1,21 @@
-import cv2
-import imutils
-import pickle
-import sys
-from fileutils import read_obj, write_obj, save_video_clip, load_video_clip
-from motiontrack import Tracker
-import click
-from readvideo import asyncTrackSave, getTracePathFromFrames
 import os
-import easygui
+import pickle
+import random
 import sys
 import threading
 from collections import deque
-from vizutils import draw_tracepoints
+
+import click
+import cv2
+import easygui
+import imutils
+
+from fileutils import load_video_clip, read_obj, save_video_clip, write_obj
+from motiontrack import Tracker
+from readvideo import asyncTrackSave, getTracePathFromFrames
 from tracepoint import TracePath, TracePoint
+from vizutils import draw_tracepoints, request_bounding_box
+
 
 def make_process_segment_thread(video_file, dest_path, start_index, end_index):
     return threading.Thread(
@@ -177,21 +180,45 @@ def segment(video, height, dest, trace, debug, fps, start, vertical):
             if debug:
                 print("DEBUG trace path mode enabled. Loading segment...")
                 target_segment = load_video_clip(video, startIndex, frameIndex)
-                proposed_path = None
+                initial_frame = target_segment[0]
+                proposed_paths = []
 
-                while True:
-                    proposed_path = getTracePathFromFrames(target_segment, height, fps)
-                    draw_tracepoints(proposed_path, frame="Proposed Path")
+                # (x, y, width in x, height in y)
+                bboxes = [request_bounding_box(target_segment[0], height)]
+                print("Generating bounding boxes...")
+                for i in range(1, 5):
+                    RAND_RANGE = 3
+                    original_bbox = bboxes[0]
+
+                    new_x = min(original_bbox[0] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[1])
+                    new_y = min(original_bbox[1] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[0])
+                    new_width = original_bbox[2] + random.randint(-RAND_RANGE, RAND_RANGE)
+                    if new_x + new_width > initial_frame.shape[1]:
+                        new_width = initial_frame.shape[1] - new_x
+                    new_height = original_bbox[3] + random.randint(-RAND_RANGE, RAND_RANGE)
+                    if new_y + new_height > initial_frame.shape[0]:
+                        new_height = initial_frame.shape[0] - new_y
+
+                    bboxes.append((new_x, new_y, new_width, new_height))
+
+                print("Performing motion tracking...")
+                for bbox in bboxes:
+                    proposed_paths.append(getTracePathFromFrames(target_segment, height, fps,
+                        tracker=Tracker(target_segment[0], 'CSRT', height, bbox=bbox)))
+
+                path_index = 0
+                for path in proposed_paths:
+                    draw_tracepoints(path, frame="Proposed Path")
 
                     key = cv2.waitKey(0) & 0xFF
                     if key == ord('q'):
                         safe_quit(threads, tracepath_files_to_merge, 0)
-                    if key == ord('\r'):
-                        cv2.destroyWindow("Proposed Path")
-                        cv2.waitKey(1)
-                        break
+                    elif key == ord('\r'):
+                        write_obj(path_save_video_dest + "-" + path_index, path)
+                        path_index += 1
+                    # for any other key, skip
 
-                write_obj(path_save_video_dest, proposed_path)
+                print("Saved {} paths to {}".format(path_index + 1, path_save_video_dest))
 
             # If not debugging, trace and save asynchronously
             else:

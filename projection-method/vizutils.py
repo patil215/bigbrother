@@ -53,6 +53,9 @@ def plotPath(path, coordinate, color):
     plt.plot([p[0] for p in pts], [p[1] for p in pts], color)
 
 def request_bounding_box(frame, height=700):
+	"""Prompt for a bounding box for the provided frame.
+		The returned object is a tuple of
+		(x coordinate, y coordinate, width in x, height in y)"""
 	scale = frame.shape[0] / height
 
 	bbox = cv2.selectROI("Select ROI", imutils.resize(frame, height=height), False)
