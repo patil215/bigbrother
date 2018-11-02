@@ -14,7 +14,7 @@ from fileutils import load_video_clip, read_obj, save_video_clip, write_obj
 from motiontrack import Tracker
 from readvideo import asyncTrackSave, getTracePathFromFrames
 from tracepoint import TracePath, TracePoint
-from vizutils import draw_tracepoints, request_bounding_box
+from vizutils import draw_tracepoints, request_bounding_box, derive_alt_bounding_boxes
 
 
 def make_process_segment_thread(video_file, dest_path, start_index, end_index):
@@ -196,20 +196,7 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
                 # (x, y, width in x, height in y)
                 bboxes = [request_bounding_box(target_segment[0], height)]
                 print("Generating bounding boxes...")
-                for i in range(1, 5):
-                    RAND_RANGE = 3
-                    original_bbox = bboxes[0]
-
-                    new_x = min(original_bbox[0] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[1])
-                    new_y = min(original_bbox[1] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[0])
-                    new_width = original_bbox[2] + random.randint(-RAND_RANGE, RAND_RANGE)
-                    if new_x + new_width > initial_frame.shape[1]:
-                        new_width = initial_frame.shape[1] - new_x
-                    new_height = original_bbox[3] + random.randint(-RAND_RANGE, RAND_RANGE)
-                    if new_y + new_height > initial_frame.shape[0]:
-                        new_height = initial_frame.shape[0] - new_y
-
-                    bboxes.append((new_x, new_y, new_width, new_height))
+                bboxes += derive_alt_bounding_boxes(initial_frame, bboxes[0])
 
                 print("Performing motion tracking...")
                 for bbox in bboxes:

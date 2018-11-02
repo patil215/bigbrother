@@ -1,19 +1,22 @@
-import click
-import imutils
-from fileutils import readData, read_obj, readVideosLazy, write_obj
-import matplotlib.pyplot as plt
+import math
+import os
+import random
 import time
 from time import sleep
+
+import click
 import cv2
-import os
-import math
-from project import eulerAnglesToRotationMatrix
+import imutils
+import matplotlib.pyplot as plt
 import numpy as np
-from motiontrack import Tracker
-from tracepoint import TracePath, TracePoint
+
 from classify import classifyDTW, computeSegment, prepData
-from vizutils import draw_tracepoints, plotPath
+from fileutils import read_obj, readData, readVideosLazy, write_obj
+from motiontrack import Tracker
+from project import eulerAnglesToRotationMatrix
 from readvideo import getTracePathFromFrames
+from tracepoint import TracePath, TracePoint
+from vizutils import draw_tracepoints, plotPath, request_bounding_box, derive_alt_bounding_boxes
 
 
 @click.command()
@@ -32,6 +35,7 @@ def predict(test_dir, height, fps, data, angle):
 
 	videos = readVideosLazy(test_dir)
 	data = readData(data)
+	random.seed(1337)
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
@@ -47,29 +51,42 @@ def predict(test_dir, height, fps, data, angle):
 		for video_path in class_videos:
 			video = read_obj(video_path)
 			video_base_name = video_path.split("/")[-1]
+			initial_frame = video[0]
 
 			metadata_path = test_dir + '/' + video_class + '/.' + video_base_name + '.meta'
-			bbox = read_obj(metadata_path)
-			if not bbox:
-				# Prompt for bounding box and store as metadata
-				tracker = Tracker(video[0], height=height)
-				write_obj(metadata_path, tracker.bbox)
-			else:
-				tracker = Tracker(video[0], height=height, bbox=bbox)
+			base_bbox = read_obj(metadata_path)
 
-			video_data = getTracePathFromFrames(video, height=height, fps=fps, tracker=tracker)
-			video_data.normalize()
+			if not base_bbox:
+				base_bbox = request_bounding_box(initial_frame, height=height)
+				write_obj(metadata_path, base_bbox)
 
-			actual = classifyDTW(data, video_data)
-			top3 = [thing[0] for thing in actual[:3]]
-			top5 = [thing[0] for thing in actual[:5]]
-			print("Expected: {} Actual: {}".format(video_class, actual[0][0]))
-			if actual[0][0] == video_class:
+			bboxes = [base_bbox] + derive_alt_bounding_boxes(initial_frame, base_bbox, qty=4, fuzz=5)
+			video_data = []
+			for bbox in bboxes:
+				path = getTracePathFromFrames(video, fps=fps, tracker=Tracker(initial_frame, bbox=bbox))
+				path.normalize()
+				video_data.append(path)
+
+			classifications = [classifyDTW(data, video_datum)[0][0] for video_datum in video_data]
+			top_class = max(set(classifications), key=classifications.count)
+			print("Truth: {} Guesses: {}".format(video_class, classifications))
+
+			if top_class == video_class:
 				correct += 1
-			if video_class in top3:
-				correct_top3 += 1
-			if video_class in top5:
-				correct_top5 += 1
+
+			# video_data = getTracePathFromFrames(video, height=height, fps=fps, tracker=tracker)
+			# video_data.normalize()
+			# actual = classifyDTW(data, video_data)
+
+			# top3 = [thing[0] for thing in actual[:3]]
+			# top5 = [thing[0] for thing in actual[:5]]
+			# print("Expected: {} Actual: {}".format(video_class, actual[0][0]))
+			# if actual[0][0] == video_class:
+			# 	correct += 1
+			# if video_class in top3:
+			# 	correct_top3 += 1
+			# if video_class in top5:
+			# 	correct_top5 += 1
 			total += 1
 
 	print("Correct: {} Correct (top 3): {} Correct (top 5): {} Total: {}".format(correct, correct_top3, correct_top5, total))

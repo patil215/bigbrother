@@ -30,7 +30,7 @@ class Tracker:
 			print("Not OK")
 			raise ValueError("bad bbox")
 
-	def pickTracker(self, tracker_type):
+	def pickTracker(self, tracker_type="CSRT"):
 		if tracker_type == 'BOOSTING':
 			tracker = cv2.TrackerBoosting_create()
 		if tracker_type == 'MIL':
