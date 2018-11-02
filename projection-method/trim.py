@@ -79,7 +79,8 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
         It is assumed the length of the vertical video matches the original video.
         It is also assumed that the framerate of the vertical video is the same as the original.
         """)
-def segment(video, height, dest, trace, debug, fps, start, vertical):
+@click.option("-o", "--offset", type=click.INT, required=False, default=None, help="How many frames behind vertical is compared to horizontal")
+def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
     """ TODO FOR PROPER CORRELATION:
     - Make aspect ratio normalization work with Z
     - Account for different scales with the XY and Z
@@ -93,13 +94,16 @@ def segment(video, height, dest, trace, debug, fps, start, vertical):
     if vertical and not os.path.exists(vertical):
         print("Invalid vertical video provided")
         sys.exit(1)
+    if vertical and not offset:
+        print("Please supply an offset!")
+        sys.exit(1)
 
     VIDEO_SOURCE = cv2.VideoCapture(video)
     VIDEO_VERTICAL = cv2.VideoCapture(vertical) if vertical else None
 
-    if VIDEO_VERTICAL and int(VIDEO_SOURCE.get(cv2.CAP_PROP_FRAME_COUNT)) != int(VIDEO_VERTICAL.get(cv2.CAP_PROP_FRAME_COUNT)):
-        print("Vertical video length does not match original video!")
-        sys.exit(1)
+    #if VIDEO_VERTICAL and int(VIDEO_SOURCE.get(cv2.CAP_PROP_FRAME_COUNT)) != int(VIDEO_VERTICAL.get(cv2.CAP_PROP_FRAME_COUNT)):
+        #print("Vertical video length does not match original video!")
+        #sys.exit(1)
 
     frameIndex = 0
     clipIndex = start
@@ -212,8 +216,8 @@ def segment(video, height, dest, trace, debug, fps, start, vertical):
             path_save_vertical_thread = make_process_path_thread(
                 vertical,
                 path_save_vertical_dest,
-                startIndex,
-                frameIndex,
+                startIndex + offset,
+                frameIndex + offset,
             )
             path_save_vertical_thread.start()
             threads.append(path_save_vertical_thread)
