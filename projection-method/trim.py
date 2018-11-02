@@ -142,6 +142,12 @@ def segment(video, height, dest, trace, debug, fps, start, vertical):
             elif key == ord("f"):
                 frameIndex += 20
                 continue
+            elif key == ord("v"):
+                frameIndex += 400
+                continue
+            elif key == ord("z"):
+                frameIndex = frameIndex - 400 if frameIndex > 400 else frameIndex
+                continue
             elif key == ord("a"):
                 frameIndex = frameIndex - 20 if frameIndex > 20 else frameIndex
                 continue
