@@ -208,17 +208,18 @@ def segment(video, height, dest, trace, debug, fps, start, vertical):
 
                 path_index = 0
                 for path in proposed_paths:
-                    draw_tracepoints(path, frame="Proposed Path")
+                    draw_tracepoints(path, title="Proposed Path")
 
                     key = cv2.waitKey(0) & 0xFF
                     if key == ord('q'):
                         safe_quit(threads, tracepath_files_to_merge, 0)
                     elif key == ord('\r'):
-                        write_obj(path_save_video_dest + "-" + path_index, path)
+                        write_obj("{}-{}".format(path_save_video_dest, path_index), path)
                         path_index += 1
                     # for any other key, skip
+                cv2.destroyWindow("Proposed Path")
 
-                print("Saved {} paths to {}".format(path_index + 1, path_save_video_dest))
+                print("Saved {} paths to {}".format(path_index, path_save_video_dest))
 
             # If not debugging, trace and save asynchronously
             else:
