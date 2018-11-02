@@ -8,7 +8,7 @@ import cv2
 def getTracePathFromFrames(video_segment, height=700, fps=60, tracker=None):
 	tracepath = TracePath()
 	initial_frame = video_segment[0]
-	tracker = tracker if tracker else Tracker(initial_frame, 'CSRT', height) 
+	tracker = tracker if tracker else Tracker(initial_frame, 'CSRT', height)
 
 	for frame_index in range(len(video_segment)):
 		frame = video_segment[frame_index]
