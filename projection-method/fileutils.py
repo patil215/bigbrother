@@ -41,7 +41,7 @@ def save_video_clip(video_source, startIndex, endIndex, filename):
 def readData(data_dir):
     data_dict = defaultdict(list)
 
-    subfolders = [f.name for f in os.scandir(data_dir) if f.is_dir() ]    
+    subfolders = [f.name for f in os.scandir(data_dir) if f.is_dir() ]
 
     for subfolder in subfolders:
         fullpath = data_dir + '/' + subfolder
@@ -56,7 +56,7 @@ def readData(data_dir):
 def readVideos(data_dir):
     data_dict = defaultdict(dict)
 
-    subfolders = [f.name for f in os.scandir(data_dir) if f.is_dir() ]    
+    subfolders = [f.name for f in os.scandir(data_dir) if f.is_dir() ]
 
     for subfolder in subfolders:
         fullpath = data_dir + '/' + subfolder
@@ -67,5 +67,22 @@ def readVideos(data_dir):
                 continue
             fullest_path = fullpath + '/' + subfile
             data_dict[subfolder][subfile] = read_obj(fullest_path)
+
+    return data_dict
+
+def readVideosLazy(data_dir):
+    data_dict = defaultdict(dict)
+
+    subfolders = [f.name for f in os.scandir(data_dir) if f.is_dir() ]
+
+    for subfolder in subfolders:
+        fullpath = data_dir + '/' + subfolder
+
+        subfiles = [f.name for f in os.scandir(fullpath) if f.is_file() ]
+        for subfile in subfiles:
+            if subfile[0] == '.':
+                continue
+            fullest_path = fullpath + '/' + subfile
+            data_dict[subfolder][fullest_path] = True
 
     return data_dict

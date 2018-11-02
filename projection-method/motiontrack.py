@@ -8,8 +8,12 @@ class Tracker:
 		"""bbox = bounding box picked out of the image"""
 		self.tracker = self.pickTracker(tracker_type)
 		self.height = height
-		self.bbox = bbox if bbox is not None else request_bounding_box(frame, height)
-		ok = self.tracker.init(frame, bbox)
+		if bbox is not None:
+			self.bbox = bbox
+		else:
+			self.bbox = request_bounding_box(frame, height)
+
+		ok = self.tracker.init(frame, self.bbox)
 
 	def track(self, frame, display=False):
 		ok, bbox = self.tracker.update(frame)

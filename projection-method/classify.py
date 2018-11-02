@@ -29,7 +29,7 @@ def recursiveSegment(tracepath, candidates, num_digits_left, current_path_index=
 		# classify
 		path_slice = TracePath(path=tracepath.path[index_segment[0]:index_segment[1] + 1])
 		path_slice.normalize()
-		
+
 		# Do our comparing and append the right one
 		candidates_to_consider = {}
 		if num_digits_left % 2 == 0:
@@ -87,7 +87,7 @@ def classifyDTW(candidates, path):
 			#results.append((dist, name))
 
 	sorted_distances = sorted(results.items(), key=operator.itemgetter(1))
-	printScores(sorted_distances)
+	# printScores(sorted_distances)
 
 	#sorted_distances = sorted(results)
 	return sorted_distances
