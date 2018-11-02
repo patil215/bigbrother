@@ -1,3 +1,6 @@
+VIDEO OFFSET: VIDEO A IS 310-315 FRAMES AHEAD OF VIDEO B
+e.g. python3 trim.py ../clips/aligned/horizontal.MP4 --dest ../data_thebigone --start 10 --height 1000 --trace --vertical ../clips/aligned/vertical.MP4 --offset -310
+
 Use --angle 45 0 270
 
 Order:
