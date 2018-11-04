@@ -41,6 +41,25 @@ def make_process_path_thread(video_file, dest_path, start_index, end_index, heig
         )
     )
 
+def generate_random_bounding_boxes(seed_box, count):
+    # (x, y, width in x, height in y)
+    bboxes = []
+    for i in range(0, count):
+        RAND_RANGE = 3
+        original_bbox = seed_box
+
+        new_x = min(original_bbox[0] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[1])
+        new_y = min(original_bbox[1] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[0])
+        new_width = original_bbox[2] + random.randint(-RAND_RANGE, RAND_RANGE)
+        if new_x + new_width > initial_frame.shape[1]:
+            new_width = initial_frame.shape[1] - new_x
+        new_height = original_bbox[3] + random.randint(-RAND_RANGE, RAND_RANGE)
+        if new_y + new_height > initial_frame.shape[0]:
+            new_height = initial_frame.shape[0] - new_y
+
+        bboxes.append((new_x, new_y, new_width, new_height))
+    return bboxes
+
 def merge_tracepaths(to_merge):
     for path_save_video_dest, path_save_vertical_dest in to_merge:
         tracepath_xy = read_obj(path_save_video_dest)
@@ -83,19 +102,22 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
         It is also assumed that the framerate of the vertical video is the same as the original.
         """)
 @click.option("-o", "--offset", type=click.INT, required=False, default=None, help="How many frames behind vertical is compared to horizontal")
-def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
+@click.option("-z", "--viewport_horizontal", nargs=2, default=(20, 35), help="Size of viewable viewport for top-down video (X, then Y) in cm")
+@click.option("-x", "--viewport_vertical", nargs=2, default=(55, 30), help="Size of viewport for vertical video (Y, then Z) in cm. Right now, only Z is used.")
+def segment(video, height, dest, trace, debug, fps, start, vertical, offset, viewport_horizontal, viewport_vertical):
     """ TODO FOR PROPER CORRELATION:
     - Make aspect ratio normalization work with Z
     - Account for different scales with the XY and Z
     - Make the merging not rely on a join
-    - Account for different framerates, and not rely on clipping the two clips exactly correctly
     """
 
+    # ARE WE FLIPPING X AND Y IN THE IMAGE?
+
     if not os.path.exists(video):
-        print("Invalid video to trim provided")
+        print("Invalid video to trim provided!")
         sys.exit(1)
     if vertical and not os.path.exists(vertical):
-        print("Invalid vertical video provided")
+        print("Invalid vertical video provided!")
         sys.exit(1)
     if vertical and not offset:
         print("Please supply an offset!")
@@ -104,56 +126,52 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
     VIDEO_SOURCE = cv2.VideoCapture(video)
     VIDEO_VERTICAL = cv2.VideoCapture(vertical) if vertical else None
 
-    #if VIDEO_VERTICAL and int(VIDEO_SOURCE.get(cv2.CAP_PROP_FRAME_COUNT)) != int(VIDEO_VERTICAL.get(cv2.CAP_PROP_FRAME_COUNT)):
-        #print("Vertical video length does not match original video!")
-        #sys.exit(1)
-
-    frameIndex = 0
-    clipIndex = start
+    frame_index = 0
+    start_index = 0
+    clip_index = start
     threads = deque()
     tracepath_files_to_merge = []  # Array of tuples
 
     while True:
-        startIndex = -1
         while True:
-            VIDEO_SOURCE.set(1, frameIndex)
-            ok, rawFrame = VIDEO_SOURCE.read()
+            VIDEO_SOURCE.set(1, frame_index)
+            ok, raw_frame = VIDEO_SOURCE.read()
             if not ok:
-                sys.exit(1)
+                safe_quit(threads, tracepath_files_to_merge, 0)
 
-            frame = imutils.resize(rawFrame, height=height)
+            frame = imutils.resize(raw_frame, height=height)
             cv2.imshow("Clipper", frame)
 
             key = cv2.waitKey(0) & 0xFF
             if key == ord("s"):
                 videoFrames = []
-                startIndex = frameIndex
-                print("[{0} - ?] Starting at frame {0}".format(startIndex))
+                start_index = frame_index
+                print("[{0} - ?] Starting at frame {0}".format(start_index))
                 continue
             elif key == ord("e"):
-                if frameIndex < startIndex:
+                if frame_index < start_index:
                     print("End index selected before start index. Please select a start index [s] first.")
                     continue
 
-                print("[{0} - {1}] Ending at frame {1}".format(startIndex, frameIndex))
+                print("[{0} - {1}] Ending at frame {1}".format(start_index, frame_index))
                 break
             elif key == ord("b"):
-                frameIndex = frameIndex - 1 if frameIndex > 0 else frameIndex
+                frame_index = frame_index - 1 if frame_index > 0 else frame_index
                 continue
             elif key == ord("n"):
-                frameIndex += 1
+                frame_index += 1
                 continue
             elif key == ord("f"):
-                frameIndex += 20
+                frame_index += 20
                 continue
             elif key == ord("v"):
-                frameIndex += 400
+                frame_index += 400
                 continue
             elif key == ord("z"):
-                frameIndex = frameIndex - 400 if frameIndex > 400 else frameIndex
+                frame_index = frame_index - 400 if frame_index > 400 else frame_index
                 continue
             elif key == ord("a"):
-                frameIndex = frameIndex - 20 if frameIndex > 20 else frameIndex
+                frame_index = frame_index - 20 if frame_index > 20 else frame_index
                 continue
             elif key == ord("q"):
                 safe_quit(threads, tracepath_files_to_merge, 0)
@@ -168,53 +186,41 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
         # Save the segment from video
         print(
             "[{0} - {1}] Loading and saving {2} frame segment..."
-            .format(startIndex, frameIndex, frameIndex + 1 - startIndex)
+            .format(start_index, frame_index, frame_index + 1 - start_index)
         )
-        segment_save_dest = "{}/segments/{}/{}.segment".format(dest, '/segments/', class_name, str(clipIndex))
+        segment_save_dest = "{}/segments/{}/{}.segment".format(dest, '/segments/', class_name, str(clip_index))
         segment_save_thread = make_process_segment_thread(
             video,
             segment_save_dest,
-            startIndex,
-            frameIndex
+            start_index,
+            frame_index
         )
         segment_save_thread.start()
         threads.append(segment_save_thread)
 
         # Save the paths
         # Get the TracePath for the video segment
-        path_save_video_dest = "{}/paths/{}/{}.path".format(dest, class_name, str(clipIndex))
+        path_save_video_dest = "{}/paths/{}/{}.path".format(dest, class_name, str(clip_index))
 
         if trace:
             # When debugging, the bounding box can be redrawn until satisfied
             # with the resulting trace. Confirm with Enter.
             if debug:
                 print("DEBUG trace path mode enabled. Loading segment...")
-                target_segment = read_video_frames(video, startIndex, frameIndex)
+                target_segment = read_video_frames(video, start_index, frame_index)
                 initial_frame = target_segment[0]
                 proposed_paths = []
 
-                # (x, y, width in x, height in y)
-                bboxes = [request_bounding_box(target_segment[0], height)]
                 print("Generating bounding boxes...")
-                for i in range(1, 5):
-                    RAND_RANGE = 3
-                    original_bbox = bboxes[0]
-
-                    new_x = min(original_bbox[0] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[1])
-                    new_y = min(original_bbox[1] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[0])
-                    new_width = original_bbox[2] + random.randint(-RAND_RANGE, RAND_RANGE)
-                    if new_x + new_width > initial_frame.shape[1]:
-                        new_width = initial_frame.shape[1] - new_x
-                    new_height = original_bbox[3] + random.randint(-RAND_RANGE, RAND_RANGE)
-                    if new_y + new_height > initial_frame.shape[0]:
-                        new_height = initial_frame.shape[0] - new_y
-
-                    bboxes.append((new_x, new_y, new_width, new_height))
+                seed_bbox = request_bounding_box(target_segment[0], height)
+                bboxes = [seed_bbox] + generate_random_bounding_boxes(seed_box, count)
 
                 print("Performing motion tracking...")
                 for bbox in bboxes:
                     proposed_paths.append(getTracePathFromFrames(target_segment, height, fps,
                         tracker=Tracker(target_segment[0], 'CSRT', height, bbox=bbox)))
+
+                save_proposed_paths(proposed_paths)
 
                 path_index = 0
                 for path_obj in proposed_paths:
@@ -236,29 +242,28 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
                 path_save_video_thread = make_process_path_thread(
                     video,
                     path_save_video_dest,
-                    startIndex,
-                    frameIndex,
+                    start_index,
+                    frame_index,
                     fps=fps
                 )
                 path_save_video_thread.start()
                 threads.append(path_save_video_thread)
 
         if trace and VIDEO_VERTICAL:
-            # We need to find the TracePath for both segments, and create a TracePath with both.
-            # Unfortunately, this is difficult to multithread.
-            path_save_vertical_dest = "{}/paths_vertical/{}/{}.vsegment".format(dest, class_name, str(clipIndex)
+            # We need to find the TracePath for both segments, and schedule a merge later.
+            path_save_vertical_dest = "{}/paths_vertical/{}/{}.vsegment".format(dest, class_name, str(clip_index)
             path_save_vertical_thread = make_process_path_thread(
                 vertical,
                 path_save_vertical_dest,
-                startIndex + offset,
-                frameIndex + offset,
+                start_index + offset,
+                frame_index + offset,
             )
             path_save_vertical_thread.start()
             threads.append(path_save_vertical_thread)
 
             tracepath_files_to_merge.append((path_save_video_dest, path_save_vertical_dest))
 
-        clipIndex += 1
+        clip_index += 1
 
 if __name__ == '__main__':
     segment()
