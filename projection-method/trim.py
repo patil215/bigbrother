@@ -10,7 +10,7 @@ import cv2
 import easygui
 import imutils
 
-from fileutils import load_video_clip, read_obj, save_video_clip, write_obj
+from fileutils import read_video_frames, read_obj, write_video_frames, write_obj
 from motiontrack import Tracker
 from readvideo import asyncTrackSave, getTracePathFromFrames
 from tracepoint import TracePath, TracePoint
@@ -19,7 +19,7 @@ from vizutils import draw_tracepoints, request_bounding_box
 
 def make_process_segment_thread(video_file, dest_path, start_index, end_index):
     return threading.Thread(
-        target=save_video_clip,
+        target=write_video_frames,
         args=(video_file, start_index, end_index, dest_path)
     )
 
@@ -189,7 +189,7 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
             # with the resulting trace. Confirm with Enter.
             if debug:
                 print("DEBUG trace path mode enabled. Loading segment...")
-                target_segment = load_video_clip(video, startIndex, frameIndex)
+                target_segment = read_video_frames(video, startIndex, frameIndex)
                 initial_frame = target_segment[0]
                 proposed_paths = []
 

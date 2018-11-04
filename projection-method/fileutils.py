@@ -19,7 +19,7 @@ def write_obj(path, object):
     with open(path, 'wb') as output:
         pickle.dump(object, output, pickle.HIGHEST_PROTOCOL)
 
-def load_video_clip(source, startIndex, endIndex):
+def read_video_frames(source, startIndex, endIndex):
     """
     Load raw frames of a video source into a list, from [startIndex, endIndex], inclusive.
     """
@@ -33,56 +33,39 @@ def load_video_clip(source, startIndex, endIndex):
 
     return videoFrames
 
-def save_video_clip(video_source, startIndex, endIndex, filename):
-    videoFrames = load_video_clip(video_source, startIndex, endIndex)
+def write_video_frames(video_source, startIndex, endIndex, filename):
+    videoFrames = read_video_frames(video_source, startIndex, endIndex)
     write_obj(filename, videoFrames)
     print("[{0} - {1}] {2} frame segment saved successfully to {3}".format(startIndex, endIndex, len(videoFrames), filename))
 
-def readData(data_dir):
-    data_dict = defaultdict(list)
+def read_training_data(data_dir):
+    file_tree = get_file_tree(data_dir)
+    for subfolder in file_tree:
+        file_tree[subfolder] = [read_obj("{}/{}/{}".format(data_dir, subfolder, subfile)) 
+                                for subfile in file_tree[subfolder]]
+    return file_tree
 
-    subfolders = [f.name for f in os.scandir(data_dir) if f.is_dir() ]
+def get_file_tree(root_dir):
+    """
+    Returns a dictionary with the keys as subfolders and values as a set of filenames.
+    Only works for root directories with one level of child folders.
+    """
+    data_dict = {}
+    subfolders = [f.name for f in os.scandir(root_dir) if f.is_dir()]
 
     for subfolder in subfolders:
-        fullpath = data_dir + '/' + subfolder
-
-        subfiles = [f.name for f in os.scandir(fullpath) if f.is_file() ]
-        for subfile in subfiles:
-            fullest_path = fullpath + '/' + subfile
-            data_dict[subfolder].append(read_obj(fullest_path))
+        data_dict[subfolder] = set([f.name for f in os.scandir(root_dir + '/' + subfolder) if f.is_file()])
 
     return data_dict
 
-def readVideos(data_dir):
-    data_dict = defaultdict(dict)
+def get_test_segment_tree(root_dir):
+    tree = get_file_tree(root_dir)
+    for folder in tree:
+        tree[folder] = list(filter(lambda filename: filename[0] != '.', tree[folder]))
+    return tree
 
-    subfolders = [f.name for f in os.scandir(data_dir) if f.is_dir() ]
-
-    for subfolder in subfolders:
-        fullpath = data_dir + '/' + subfolder
-
-        subfiles = [f.name for f in os.scandir(fullpath) if f.is_file() ]
-        for subfile in subfiles:
-            if subfile[0] == '.':
-                continue
-            fullest_path = fullpath + '/' + subfile
-            data_dict[subfolder][subfile] = read_obj(fullest_path)
-
-    return data_dict
-
-def readVideosLazy(data_dir):
-    data_dict = defaultdict(dict)
-
-    subfolders = [f.name for f in os.scandir(data_dir) if f.is_dir() ]
-
-    for subfolder in subfolders:
-        fullpath = data_dir + '/' + subfolder
-
-        subfiles = [f.name for f in os.scandir(fullpath) if f.is_file() ]
-        for subfile in subfiles:
-            if subfile[0] == '.':
-                continue
-            fullest_path = fullpath + '/' + subfile
-            data_dict[subfolder][fullest_path] = True
-
-    return data_dict
+def get_test_path_tree(root_dir):
+    tree = get_file_tree(root_dir)
+    for folder in tree:
+        tree[folder] = list(filter(lambda filename: filename[0] == '.' and filename[-5:] == ".path", tree[folder]))
+    return tree

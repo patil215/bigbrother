@@ -1,6 +1,6 @@
 import click
 import imutils
-from fileutils import readData, read_obj
+from fileutils import read_training_data, read_obj
 import matplotlib.pyplot as plt
 import time
 from time import sleep
@@ -43,7 +43,7 @@ def predict(filename, height, fps, data, angle, preview):
 		print("Invalid data directory provided!")
 		return
 
-	data = readData(data)
+	data = read_training_data(data)
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))

@@ -1,14 +1,17 @@
-from fileutils import readData, read_obj, write_obj
-from tracepoint import TracePath, TracePoint
-import imutils
-from motiontrack import Tracker
 import threading
+
 import cv2
+import imutils
+
+from fileutils import read_obj, write_obj
+from motiontrack import Tracker
+from tracepoint import TracePath, TracePoint
+
 
 def getTracePathFromFrames(video_segment, height=700, fps=60, tracker=None):
 	tracepath = TracePath()
 	initial_frame = video_segment[0]
-	tracker = tracker if tracker else Tracker(initial_frame, 'CSRT', height)
+	tracker = tracker if tracker else Tracker(initial_frame, height=height)
 
 	for frame_index in range(len(video_segment)):
 		frame = video_segment[frame_index]

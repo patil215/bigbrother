@@ -1,19 +1,21 @@
-import click
-import imutils
-from fileutils import readData, read_obj, readVideosLazy, write_obj
-import matplotlib.pyplot as plt
+import math
+import os
 import time
 from time import sleep
+
+import click
 import cv2
-import os
-import math
-from project import eulerAnglesToRotationMatrix
+import imutils
+import matplotlib.pyplot as plt
 import numpy as np
-from motiontrack import Tracker
-from tracepoint import TracePath, TracePoint
+
 from classify import classifyDTW, computeSegment, prepData
-from vizutils import draw_tracepoints, plotPath
+from fileutils import read_obj, write_obj, read_training_data, get_test_segment_tree, get_test_path_tree
+from motiontrack import Tracker
+from project import eulerAnglesToRotationMatrix
 from readvideo import getTracePathFromFrames
+from tracepoint import TracePath, TracePoint
+from vizutils import draw_tracepoints, plotPath
 
 
 @click.command()
@@ -30,26 +32,51 @@ def predict(test_dir, height, fps, data, angle):
 		print("Invalid data directory provided!")
 		return
 
-	videos = readVideosLazy(test_dir)
-	data = readData(data)
+	path_tree = get_test_path_tree(test_dir)
+	video_tree = get_test_segment_tree(test_dir)
+	training_data = read_training_data(data)
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
-	prepData(data, transform)
+	prepData(training_data, transform)
 
 	correct = 0
 	correct_top3 = 0
 	correct_top5 = 0
 	total = 0
-	# Go through videos and classify / score them!!!1
-	for video_class in videos:
-		class_videos = videos[video_class]
-		for video_path in class_videos:
-			video = read_obj(video_path)
-			video_base_name = video_path.split("/")[-1]
 
-			metadata_path = test_dir + '/' + video_class + '/.' + video_base_name + '.meta'
+	# Classify test paths.
+	print("Classifying test paths...")
+	for video_class in path_tree:
+		class_paths = path_tree[video_class]
+		for path_name in class_paths:
+			path = read_obj("{}/{}/{}".format(test_dir, video_class, path_name))
+
+			classifications = classifyDTW(training_data, path)
+			top3 = [thing[0] for thing in classifications[:3]]
+			top5 = [thing[0] for thing in classifications[:5]]
+			print("Predicted: {}, Expected: {}".format(classifications[0][0], video_class))
+			if classifications[0][0] == video_class:
+				correct += 1
+			if video_class in top3:
+				correct_top3 += 1
+			if video_class in top5:
+				correct_top5 += 1
+			total += 1
+
+	# Record new paths and classify them for video clips without existing path files.
+	print("Generating paths for new files...")
+	for video_class in video_tree:
+		class_videos = video_tree[video_class]
+		for video_name in class_videos:
+			# Ignore videos which already have a path associated
+			if ".{}.path".format(video_name) in path_tree[video_class]:
+				continue
+
+			video = read_obj("{}/{}/{}".format(test_dir, video_class, video_name))
+			metadata_path = "{}/{}/{}".format(test_dir, video_class, ".{}.meta".format(video_name))
 			bbox = read_obj(metadata_path)
+
 			if not bbox:
 				# Prompt for bounding box and store as metadata
 				tracker = Tracker(video[0], height=height)
@@ -59,12 +86,13 @@ def predict(test_dir, height, fps, data, angle):
 
 			video_data = getTracePathFromFrames(video, height=height, fps=fps, tracker=tracker)
 			video_data.normalize()
+			write_obj("{}/{}/{}".format(test_dir, video_class, ".{}.path".format(video_name)), video_data)
 
-			actual = classifyDTW(data, video_data)
-			top3 = [thing[0] for thing in actual[:3]]
-			top5 = [thing[0] for thing in actual[:5]]
-			print("Expected: {} Actual: {}".format(video_class, actual[0][0]))
-			if actual[0][0] == video_class:
+			classifications = classifyDTW(training_data, video_data)
+			top3 = [thing[0] for thing in classifications[:3]]
+			top5 = [thing[0] for thing in classifications[:5]]
+			print("Predicted: {}, Expected: {}".format(classifications[0][0], video_class))
+			if classifications[0][0] == video_class:
 				correct += 1
 			if video_class in top3:
 				correct_top3 += 1
@@ -73,7 +101,6 @@ def predict(test_dir, height, fps, data, angle):
 			total += 1
 
 	print("Correct: {} Correct (top 3): {} Correct (top 5): {} Total: {}".format(correct, correct_top3, correct_top5, total))
-
 
 if __name__ == "__main__":
 	predict()
