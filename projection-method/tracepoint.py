@@ -2,9 +2,8 @@ import numpy as np
 
 class TracePoint:
     # t signifies milliseconds since start of path trace.
-    # beginning signifies if this is the start of a "sequence" - i.e. to handle disconnected points
     # pos is a (x, y, z) tuple
-    def __init__(self, pos, t, beginning=True):
+    def __init__(self, pos, t):
         self.pos = pos
         self.t = t
 
@@ -32,35 +31,52 @@ class TracePath:
         for point in self.path:
             point.transform(rotation_matrix)
 
-    def normalizeAspect(self, bigs, smalls, big_lower, big_higher, aspectRatio):
-        new_bigs = np.interp(bigs, (bigs.min(), bigs.max()), (big_lower, big_higher))
+    def normalize_preserving_aspect(self, big_sequence, small_sequences, lower_bound, upper_bound):
+        big_min, big_max = big_sequence.min(), big_sequence.max()
+        big_bound_spread = upper_bound - lower_bound
+        new_big_sequence = np.interp(big_sequence, (big_min, big_max), (lower_bound, upper_bound))
 
-        small_spread = aspectRatio * (big_higher - big_lower)
-        small_lower = (((big_higher - big_lower) - small_spread) / 2) + big_lower
-        small_higher = big_higher - (((big_higher - big_lower) - small_spread) / 2)
-        new_smalls = np.interp(smalls, (smalls.min(), smalls.max()), (small_lower, small_higher))
+        new_small_sequences = []
+        for small_sequence in small_sequences:
+            small_min, small_max = small_sequence.min(), small_sequence.max()
 
-        return (new_bigs, new_smalls)
+            aspect_ratio = (small_max - small_min) / (big_max - big_min) # Less than 1
+            small_bound_spread = aspect_ratio * big_bound_spread
+            small_lower_bound = lower_bound + ((big_bound_spread - small_bound_spread) / 2)
+            small_upper_bound = upper_bound - ((big_bound_spread - small_bound_spread) / 2)
+
+            new_small_sequence = np.interp(small_sequence, (small_min, small_max), (small_lower_bound, small_upper_bound))
+            small_sequences.append(new_small_sequence)
+
+        return (new_big_sequence, new_small_sequences)
 
     def normalize(self, low_bound=0, high_bound=1, preserve_aspect_ratio=True):
-        """ TODO this ignores z when preserving aspect ratio """
         xs = np.array([p.pos[0] for p in self.path])
         ys = np.array([p.pos[1] for p in self.path])
         zs = np.array([p.pos[2] for p in self.path])
 
         if preserve_aspect_ratio:
-            xDiff = xs.max() - xs.min()
-            yDiff = ys.max() - ys.min()
-            if xDiff > yDiff:
-                # x the bigger boi
-                xs, ys = self.normalizeAspect(xs, ys, low_bound, high_bound, yDiff / xDiff)
-            else:
-                # y the bigger boi
-                ys, xs = self.normalizeAspect(ys, xs, low_bound, high_bound, xDiff / yDiff)
+            x_diff = xs.max() - xs.min()
+            y_diff = ys.max() - ys.min()
+            z_diff = zs.max() - xz.min()
+            max_difference = max(x_diff, y_diff, z_diff)
+            if max_difference == x_diff:
+                xs, others = self.normalize_preserving_aspect(xs, [ys, zs], 0, 1)
+                ys = others[0]
+                zs = others[1]
+            elif max_difference == y_diff:
+                ys, others = self.normalize_preserving_aspect(ys, [xs, zs], 0, 1)
+                xs = others[0]
+                zs = others[1]
+            elif max_difference = z_diff:
+                zs, others = self.normalize_preserving_aspect(zs, [xs, ys], 0, 1)
+                xs = others[0]
+                ys = others[1]
 
             normalized_positions = list(zip(
                 xs, ys, zs
             ))
+            
         else:
             normalized_positions = list(zip(
                 np.interp(xs, (xs.min(), xs.max()), (low_bound, high_bound)),
