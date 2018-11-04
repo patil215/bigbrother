@@ -7,7 +7,7 @@ from fileutils import read_obj, write_obj
 from motiontrack import Tracker
 from tracepoint import TracePath, TracePoint
 
-def tracepoint_from_frame(frame, tracker, frame_index, fps, viewport=(1, 1)):
+def tracepoint_from_frame(frame, tracker, frame_index, fps, viewport=None):
 	bbox = tracker.track(frame)
 
 	timestamp = (1000.0 / fps) * frame_index
@@ -15,11 +15,13 @@ def tracepoint_from_frame(frame, tracker, frame_index, fps, viewport=(1, 1)):
 	x_pixels = bbox[0] + (bbox[2] / 2)
 	y_pixels = bbox[1] + (bbox[3] / 2)
 
-	x_cm = (x_pixels / frame.shape[1]) * viewport[0]
-	y_cm = (y_pixels / frame.shape[0]) * viewport[1]
-	return TracePoint((x_cm, y_cm, 0), timestamp)
+	if viewport:
+		x_cm = (x_pixels / frame.shape[1]) * viewport[0]
+		y_cm = (y_pixels / frame.shape[0]) * viewport[1]
+		return TracePoint((x_cm, y_cm, 0), timestamp)
+	return TracePoint((x_pixels, y_pixels, 0), timestamp)
 
-def tracepath_from_frames(video_segment, viewport=(1, 1), height=700, fps=60, tracker=None):
+def tracepath_from_frames(video_segment, viewport=None, height=700, fps=60, tracker=None):
 	tracepath = TracePath()
 	initial_frame = video_segment[0]
 	tracker = tracker if tracker else Tracker(initial_frame, height=height)

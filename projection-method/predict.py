@@ -11,7 +11,7 @@ from project import eulerAnglesToRotationMatrix
 import numpy as np
 from motiontrack import Tracker
 from tracepoint import TracePath, TracePoint
-from classify import classifyDTW, computeSegment, prepData
+from classify import classifyDTW, computeSegment, prep_data
 from vizutils import draw_tracepoints, plotPath
 from readvideo import getTracePathFromVideoFile
 
@@ -47,7 +47,7 @@ def predict(filename, height, fps, data, angle, preview):
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
-	prepData(data, transform)
+	prep_data(data, transform)
 
 	video_data = getTracePathFromVideoFile(filename, height=height, fps=fps)
 	#video_data.transform(transform)

@@ -6,14 +6,13 @@ import operator
 from tracepoint import TracePath
 import math
 
-def prepData(data, R):
+def prep_data(data, R):
 	for category in data:
 		for tracepath in data[category]:
 			tracepath.transform(R)
 			tracepath.normalize()
 
-
-def recursiveSegment(tracepath, candidates, num_digits_left, current_path_index=0, STEP_DURATION=50, FPS=29.97):
+def recursive_segment(tracepath, candidates, num_digits_left, current_path_index=0, STEP_DURATION=50, FPS=29.97):
 	if num_digits_left == 0:
 		return [(0, [])]
 
@@ -42,14 +41,14 @@ def recursiveSegment(tracepath, candidates, num_digits_left, current_path_index=
 		print("{} {} {}".format(num_digits_left, result, distance))
 
 		# Get top 10 of next recursive indices
-		children = recursiveSegment(tracepath, candidates, num_digits_left - 1, index_segment[1] + 1)
+		children = recursive_segment(tracepath, candidates, num_digits_left - 1, index_segment[1] + 1)
 		for child in children:
 			children_results.append((distance + child[0], [result] + child[1]))
 
 	return sorted(children_results)[:10]
 
 def computeSegment(tracepath, candidates, num_digits):
-	return recursiveSegment(tracepath, candidates, num_digits)
+	return recursive_segment(tracepath, candidates, num_digits)
 
 def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	dist_x, cost_x, acc_x, path_x = dtw(x_actual, x_test, dist=lambda x, y: abs(x - y))

@@ -2,6 +2,7 @@ import math
 import os
 import time
 from time import sleep
+from collections import defaultdict
 
 import click
 import cv2
@@ -9,14 +10,39 @@ import imutils
 import matplotlib.pyplot as plt
 import numpy as np
 
-from classify import classifyDTW, computeSegment, prepData
+from classify import classifyDTW, computeSegment, prep_data
 from fileutils import read_obj, write_obj, read_training_data, get_test_segment_tree, get_test_path_tree
 from motiontrack import Tracker
 from project import eulerAnglesToRotationMatrix
-from readvideo import getTracePathFromFrames
+from readvideo import tracepath_from_frames
 from tracepoint import TracePath, TracePoint
 from vizutils import draw_tracepoints, plotPath
 
+def update_statistics(classifications, video_class):
+	top3 = [thing[0] for thing in classifications[:3]]
+	top5 = [thing[0] for thing in classifications[:5]]
+	print("Predicted: {}, Expected: {}".format(classifications[0][0], video_class))
+	if classifications[0][0] == video_class:
+		statistics[video_class]["correct"] += 1
+	if video_class in top3:
+		statistics[video_class]["correct_top3"] += 1
+	if video_class in top5:
+		statistics[video_class]["correct_top5"] += 1
+	statistics[video_class]["total"] += 1
+
+def print_statistics(statistics):
+	print("SUMMARY OF RESULTS:")
+	print("Exact: {} \t Top 3: {} \t Top 5: {} \t Total: {}".format(
+			sum([statistics[c]["correct"] for c in statistics]),
+			sum([statistics[c]["correct_top3"] for c in statistics]),
+			sum([statistics[c]["correct_top5"] for c in statistics]),
+			sum([statistics[c]["total"] for c in statistics]),
+		)
+	)
+	print("BY CLASS:")
+	for class_name in statistics:
+		stats = statistics[class_name]
+		print("{} : Exact: {} \t Top 3:{} \t Top 5:{} \t Total: {}".format(class_name, stats["correct"], stats["correct_top3"], stats["correct_top5"], stats["total"]))
 
 @click.command()
 @click.argument('test_dir')
@@ -38,12 +64,9 @@ def predict(test_dir, height, fps, data, angle):
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
-	prepData(training_data, transform)
+	prep_data(training_data, transform)
 
-	correct = 0
-	correct_top3 = 0
-	correct_top5 = 0
-	total = 0
+	statistics = defaultdict(lambda: defaultdict(int))
 
 	# Classify test paths.
 	print("Classifying test paths...")
@@ -53,16 +76,7 @@ def predict(test_dir, height, fps, data, angle):
 			path = read_obj("{}/{}/{}".format(test_dir, video_class, path_name))
 
 			classifications = classifyDTW(training_data, path)
-			top3 = [thing[0] for thing in classifications[:3]]
-			top5 = [thing[0] for thing in classifications[:5]]
-			print("Predicted: {}, Expected: {}".format(classifications[0][0], video_class))
-			if classifications[0][0] == video_class:
-				correct += 1
-			if video_class in top3:
-				correct_top3 += 1
-			if video_class in top5:
-				correct_top5 += 1
-			total += 1
+			update_statistics(classifications, video_class)
 
 	# Record new paths and classify them for video clips without existing path files.
 	print("Generating paths for new files...")
@@ -84,23 +98,14 @@ def predict(test_dir, height, fps, data, angle):
 			else:
 				tracker = Tracker(video[0], height=height, bbox=bbox)
 
-			video_data = getTracePathFromFrames(video, height=height, fps=fps, tracker=tracker)
+			video_data = tracepath_from_frames(video, height=height, fps=fps, tracker=tracker)
 			video_data.normalize()
 			write_obj("{}/{}/{}".format(test_dir, video_class, "{}.path".format(video_name)), video_data)
 
-			classifications = classifyDTW(training_data, video_data)
-			top3 = [thing[0] for thing in classifications[:3]]
-			top5 = [thing[0] for thing in classifications[:5]]
-			print("Predicted: {}, Expected: {}".format(classifications[0][0], video_class))
-			if classifications[0][0] == video_class:
-				correct += 1
-			if video_class in top3:
-				correct_top3 += 1
-			if video_class in top5:
-				correct_top5 += 1
-			total += 1
+			classifications = classifyDTW(training_data, video_data, video_class)
+			update_statistics(classifications)
 
-	print("Correct: {} Correct (top 3): {} Correct (top 5): {} Total: {}".format(correct, correct_top3, correct_top5, total))
+	print_statistics(statistics)
 
 if __name__ == "__main__":
 	predict()

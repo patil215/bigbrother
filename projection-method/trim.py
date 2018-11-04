@@ -106,12 +106,6 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.option("-z", "--viewport_horizontal", nargs=2, default=(20, 35), help="Size of viewable viewport for top-down video (X, then Y) in cm")
 @click.option("-x", "--viewport_vertical", nargs=2, default=(55, 30), help="Size of viewport for vertical video (Y, then Z) in cm. Right now, only Z is used.")
 def segment(video, height, dest, trace, debug, fps, start, vertical, offset, viewport_horizontal, viewport_vertical):
-    """ TODO FOR PROPER CORRELATION:
-    - Make aspect ratio normalization work with Z
-    - Account for different scales with the XY and Z
-    - Make the merging not rely on a join
-    """
-
     if not os.path.exists(video):
         print("Invalid video to trim provided!")
         sys.exit(1)
