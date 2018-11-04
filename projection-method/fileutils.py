@@ -35,7 +35,7 @@ def read_video_frames(source, startIndex, endIndex):
 
 def write_video_frames(video_source, startIndex, endIndex, filename):
     videoFrames = read_video_frames(video_source, startIndex, endIndex)
-    write_obj(filename, videoFrames)
+    write_obj(filename + ".segment", videoFrames)
     print("[{0} - {1}] {2} frame segment saved successfully to {3}".format(startIndex, endIndex, len(videoFrames), filename))
 
 def read_training_data(data_dir):
