@@ -170,7 +170,7 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
             "[{0} - {1}] Loading and saving {2} frame segment..."
             .format(startIndex, frameIndex, frameIndex + 1 - startIndex)
         )
-        segment_save_dest = dest + '/segments/' + class_name + '/' + str(clipIndex)
+        segment_save_dest = "{}/segments/{}/{}.segment".format(dest, '/segments/', class_name, str(clipIndex))
         segment_save_thread = make_process_segment_thread(
             video,
             segment_save_dest,
@@ -181,10 +181,10 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
         threads.append(segment_save_thread)
 
         # Save the paths
-        if trace:
-            # Get the TracePath for the video segment
-            path_save_video_dest = dest + '/paths/' + class_name + '/' + str(clipIndex)
+        # Get the TracePath for the video segment
+        path_save_video_dest = "{}/paths/{}/{}.path".format(dest, class_name, str(clipIndex))
 
+        if trace:
             # When debugging, the bounding box can be redrawn until satisfied
             # with the resulting trace. Confirm with Enter.
             if debug:
@@ -217,14 +217,14 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
                         tracker=Tracker(target_segment[0], 'CSRT', height, bbox=bbox)))
 
                 path_index = 0
-                for path in proposed_paths:
+                for path_obj in proposed_paths:
                     draw_tracepoints(path, title="Proposed Path")
 
                     key = cv2.waitKey(0) & 0xFF
                     if key == ord('q'):
                         safe_quit(threads, tracepath_files_to_merge, 0)
                     elif key == ord('\r'):
-                        write_obj("{}-{}".format(path_save_video_dest, path_index), path)
+                        write_obj(path_save_video_dest.replace(".path", "-{}.path".format(path_index)), path_obj)
                         path_index += 1
                     # for any other key, skip
                 cv2.destroyWindow("Proposed Path")
@@ -246,7 +246,7 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset):
         if trace and VIDEO_VERTICAL:
             # We need to find the TracePath for both segments, and create a TracePath with both.
             # Unfortunately, this is difficult to multithread.
-            path_save_vertical_dest = dest + '/paths_vertical/' + class_name + '/' + str(clipIndex)
+            path_save_vertical_dest = "{}/paths_vertical/{}/{}.vsegment".format(dest, class_name, str(clipIndex)
             path_save_vertical_thread = make_process_path_thread(
                 vertical,
                 path_save_vertical_dest,

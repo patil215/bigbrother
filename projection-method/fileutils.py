@@ -9,6 +9,9 @@ def read_obj(path):
     return pickle.load(open(path, 'rb'))
 
 def write_obj(path, object):
+    if path.rfind(".") == -1:
+        print("Warning: saving file without an extension: {}".format(path))
+
     if not os.path.exists(os.path.dirname(path)):
         try:
             os.makedirs(os.path.dirname(path))
@@ -35,7 +38,7 @@ def read_video_frames(source, startIndex, endIndex):
 
 def write_video_frames(video_source, startIndex, endIndex, filename):
     videoFrames = read_video_frames(video_source, startIndex, endIndex)
-    write_obj(filename + ".segment", videoFrames)
+    write_obj(filename, videoFrames)
     print("[{0} - {1}] {2} frame segment saved successfully to {3}".format(startIndex, endIndex, len(videoFrames), filename))
 
 def read_training_data(data_dir):
@@ -61,11 +64,11 @@ def get_file_tree(root_dir):
 def get_test_segment_tree(root_dir):
     tree = get_file_tree(root_dir)
     for folder in tree:
-        tree[folder] = list(filter(lambda filename: filename[0] != '.', tree[folder]))
+        tree[folder] = list(filter(lambda filename: filename[0] != '.' and filename[-5:] != ".path", tree[folder]))
     return tree
 
 def get_test_path_tree(root_dir):
     tree = get_file_tree(root_dir)
     for folder in tree:
-        tree[folder] = list(filter(lambda filename: filename[0] == '.' and filename[-5:] == ".path", tree[folder]))
+        tree[folder] = list(filter(lambda filename: filename[-5:] == ".path", tree[folder]))
     return tree

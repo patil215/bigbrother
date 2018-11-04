@@ -70,7 +70,7 @@ def predict(test_dir, height, fps, data, angle):
 		class_videos = video_tree[video_class]
 		for video_name in class_videos:
 			# Ignore videos which already have a path associated
-			if ".{}.path".format(video_name) in path_tree[video_class]:
+			if "{}.path".format(video_name) in path_tree[video_class]:
 				continue
 
 			video = read_obj("{}/{}/{}".format(test_dir, video_class, video_name))
@@ -86,7 +86,7 @@ def predict(test_dir, height, fps, data, angle):
 
 			video_data = getTracePathFromFrames(video, height=height, fps=fps, tracker=tracker)
 			video_data.normalize()
-			write_obj("{}/{}/{}".format(test_dir, video_class, ".{}.path".format(video_name)), video_data)
+			write_obj("{}/{}/{}".format(test_dir, video_class, "{}.path".format(video_name)), video_data)
 
 			classifications = classifyDTW(training_data, video_data)
 			top3 = [thing[0] for thing in classifications[:3]]
