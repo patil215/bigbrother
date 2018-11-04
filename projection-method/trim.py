@@ -12,7 +12,7 @@ import imutils
 
 from fileutils import read_video_frames, read_obj, write_video_frames, write_obj
 from motiontrack import Tracker
-from readvideo import asyncTrackSave, getTracePathFromFrames
+from readvideo import save_tracepath_from_raw_video, tracepath_from_frames
 from tracepoint import TracePath, TracePoint
 from vizutils import draw_tracepoints, request_bounding_box
 
@@ -23,20 +23,21 @@ def make_process_segment_thread(video_file, dest_path, start_index, end_index):
         args=(video_file, start_index, end_index, dest_path)
     )
 
-def make_process_path_thread(video_file, dest_path, start_index, end_index, height=700, fps=60):
+def make_process_path_thread(video_file, dest_path, start_index, end_index, viewport, height=700, fps=60):
     source = cv2.VideoCapture(video_file)
     source.set(1, start_index)
     ok, raw_frame = source.read()
     tracker = Tracker(raw_frame, 'CSRT', height)
 
     return threading.Thread(
-        target=asyncTrackSave,
+        target=save_tracepath_from_raw_video,
         args=(
             source,
             start_index,
             end_index,
             tracker,
             dest_path,
+            viewport,
             fps
         )
     )
@@ -110,8 +111,6 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
     - Account for different scales with the XY and Z
     - Make the merging not rely on a join
     """
-
-    # ARE WE FLIPPING X AND Y IN THE IMAGE?
 
     if not os.path.exists(video):
         print("Invalid video to trim provided!")
@@ -188,7 +187,7 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
             "[{0} - {1}] Loading and saving {2} frame segment..."
             .format(start_index, frame_index, frame_index + 1 - start_index)
         )
-        segment_save_dest = "{}/segments/{}/{}.segment".format(dest, '/segments/', class_name, str(clip_index))
+        segment_save_dest = "{}/segments/{}/{}.segment".format(dest, class_name, str(clip_index))
         segment_save_thread = make_process_segment_thread(
             video,
             segment_save_dest,
@@ -217,7 +216,7 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
 
                 print("Performing motion tracking...")
                 for bbox in bboxes:
-                    proposed_paths.append(getTracePathFromFrames(target_segment, height, fps,
+                    proposed_paths.append(tracepath_from_frames(target_segment, viewport_horizontal, height, fps, 
                         tracker=Tracker(target_segment[0], 'CSRT', height, bbox=bbox)))
 
                 save_proposed_paths(proposed_paths)
@@ -244,6 +243,7 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
                     path_save_video_dest,
                     start_index,
                     frame_index,
+                    viewport_horizontal,
                     fps=fps
                 )
                 path_save_video_thread.start()
@@ -251,12 +251,14 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
 
         if trace and VIDEO_VERTICAL:
             # We need to find the TracePath for both segments, and schedule a merge later.
-            path_save_vertical_dest = "{}/paths_vertical/{}/{}.vsegment".format(dest, class_name, str(clip_index)
+            path_save_vertical_dest = "{}/paths_vertical/{}/{}.vsegment".format(dest, class_name, str(clip_index))
             path_save_vertical_thread = make_process_path_thread(
                 vertical,
                 path_save_vertical_dest,
                 start_index + offset,
                 frame_index + offset,
+                viewport_vertical,
+                fps=fps
             )
             path_save_vertical_thread.start()
             threads.append(path_save_vertical_thread)
