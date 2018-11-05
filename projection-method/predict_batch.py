@@ -9,6 +9,7 @@ import cv2
 import imutils
 import matplotlib.pyplot as plt
 import numpy as np
+from tabulate import tabulate
 
 from classify import classifyDTW, computeSegment, prep_data
 from fileutils import read_obj, write_obj, read_training_data, get_test_segment_tree, get_test_path_tree
@@ -18,7 +19,7 @@ from readvideo import tracepath_from_frames
 from tracepoint import TracePath, TracePoint
 from vizutils import draw_tracepoints, plotPath
 
-def update_statistics(classifications, video_class):
+def update_statistics(statistics, classifications, video_class):
 	top3 = [thing[0] for thing in classifications[:3]]
 	top5 = [thing[0] for thing in classifications[:5]]
 	print("Predicted: {}, Expected: {}".format(classifications[0][0], video_class))
@@ -32,7 +33,7 @@ def update_statistics(classifications, video_class):
 
 def print_statistics(statistics):
 	print("SUMMARY OF RESULTS:")
-	print("Exact: {} \t Top 3: {} \t Top 5: {} \t Total: {}".format(
+	print("Exact / Top 3 / Top 5 / Total: {} / {} / {} / {}".format(
 			sum([statistics[c]["correct"] for c in statistics]),
 			sum([statistics[c]["correct_top3"] for c in statistics]),
 			sum([statistics[c]["correct_top5"] for c in statistics]),
@@ -40,9 +41,12 @@ def print_statistics(statistics):
 		)
 	)
 	print("BY CLASS:")
-	for class_name in statistics:
-		stats = statistics[class_name]
-		print("{} : Exact: {} \t Top 3:{} \t Top 5:{} \t Total: {}".format(class_name, stats["correct"], stats["correct_top3"], stats["correct_top5"], stats["total"]))
+	print(
+		tabulate(
+			[[c, statistics[c]["correct"]/statistics[c]["total"], statistics[c]["correct_top3"], statistics[c]["correct_top5"], statistics[c]["total"]] for c in statistics],
+			headers=["Class", "Percent correct", "Top 3", "Top 5", "Total"]
+		)
+	)
 
 @click.command()
 @click.argument('test_dir')
@@ -74,9 +78,10 @@ def predict(test_dir, height, fps, data, angle):
 		class_paths = path_tree[video_class]
 		for path_name in class_paths:
 			path = read_obj("{}/{}/{}".format(test_dir, video_class, path_name))
+			path.normalize()
 
 			classifications = classifyDTW(training_data, path)
-			update_statistics(classifications, video_class)
+			update_statistics(statistics, classifications, video_class)
 
 	# Record new paths and classify them for video clips without existing path files.
 	print("Generating paths for new files...")
@@ -103,7 +108,7 @@ def predict(test_dir, height, fps, data, angle):
 			write_obj("{}/{}/{}".format(test_dir, video_class, "{}.path".format(video_name)), video_data)
 
 			classifications = classifyDTW(training_data, video_data, video_class)
-			update_statistics(classifications)
+			update_statistics(statistics, classifications, video_class)
 
 	print_statistics(statistics)
 

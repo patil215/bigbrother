@@ -61,7 +61,7 @@ def align(video_horizontal, video_vertical, video_horizontal_dest, video_vertica
         print("")
         print("index_a: {} index_b: {}".format(ind_a, ind_b))
         print("start_a: {} end_a: {}, start_b: {}, end_b: {}".format(start_a, end_a, start_b, end_b))
-        print("offset between the two indices: {}".format(index_b - index_a))
+        print("offset between the two indices: {}".format(ind_b - ind_a))
         print("{} vs {} frames".format((end_a - start_a), (end_b - start_b)))
         cv2.imshow("Trimmer", np.hstack((frame_a, frame_b)))
 

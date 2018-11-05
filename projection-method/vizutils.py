@@ -26,6 +26,7 @@ def draw_tracepoints(tracepath, scale=1.0, fit_canvas=True, color=(255, 255, 255
 	frame = create_blank(512, 512, rgb_color=(0, 0, 0))
 
 	"""Given a tracepath, draw the path on the given frame."""
+	tracepath.normalize(0, 512)
 	xs = np.array([point.pos[0] for point in tracepath.path])
 	ys = np.array([point.pos[1] for point in tracepath.path])
 
@@ -33,7 +34,7 @@ def draw_tracepoints(tracepath, scale=1.0, fit_canvas=True, color=(255, 255, 255
 	width = frame.shape[1]
 
 	if fit_canvas:
-		draw_points = list(zip(np.interp(xs, (xs.min(), xs.max()), (0, width)), np.interp(ys, (ys.min(), ys.max()), (0, height))))
+		draw_points = list(zip(xs, ys))
 	else:
 		draw_points = list(zip(xs, ys))
 
@@ -69,7 +70,8 @@ def request_bounding_box(frame, height=700):
 @click.command()
 @click.argument('filename')
 @click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=(0, 0, 0))
-def display_tracepoints(filename, angle):
+@click.option('-f', '--no-fit-canvas', is_flag=True, help="Don't try to fit canvas")
+def display_tracepoints(filename, angle, no_fit_canvas):
 	tracepath = read_obj(filename)
 	if tracepath is None:
 		print("The specified file does not exist.")
@@ -83,7 +85,7 @@ def display_tracepoints(filename, angle):
 		tracepath.transform(R)
 		tracepath.normalize()
 
-		draw_tracepoints(tracepath, title="{0} transformed to {0}".format(filename, angle))
+		draw_tracepoints(tracepath, fit_canvas=(not no_fit_canvas), title="{0} transformed to {0}".format(filename, angle))
 
 	cv2.waitKey(0)
 

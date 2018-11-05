@@ -42,21 +42,21 @@ def make_process_path_thread(video_file, dest_path, start_index, end_index, view
         )
     )
 
-def generate_random_bounding_boxes(seed_box, count):
+def generate_random_bounding_boxes(seed_box, count, width, height):
     # (x, y, width in x, height in y)
     bboxes = []
     for i in range(0, count):
         RAND_RANGE = 3
         original_bbox = seed_box
 
-        new_x = min(original_bbox[0] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[1])
-        new_y = min(original_bbox[1] + random.randint(-RAND_RANGE, RAND_RANGE), initial_frame.shape[0])
+        new_x = min(original_bbox[0] + random.randint(-RAND_RANGE, RAND_RANGE), width)
+        new_y = min(original_bbox[1] + random.randint(-RAND_RANGE, RAND_RANGE), height)
         new_width = original_bbox[2] + random.randint(-RAND_RANGE, RAND_RANGE)
-        if new_x + new_width > initial_frame.shape[1]:
-            new_width = initial_frame.shape[1] - new_x
+        if new_x + new_width > width:
+            new_width = width - new_x
         new_height = original_bbox[3] + random.randint(-RAND_RANGE, RAND_RANGE)
-        if new_y + new_height > initial_frame.shape[0]:
-            new_height = initial_frame.shape[0] - new_y
+        if new_y + new_height > height:
+            new_height = height - new_y
 
         bboxes.append((new_x, new_y, new_width, new_height))
     return bboxes
@@ -95,7 +95,7 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
 @click.option("-t", "--trace", is_flag=True, help="Enable trace path recording mode")
 @click.option("-d", "--debug", is_flag=True, help="Enable trace path debugging", default=False, required=False)
-@click.option("-f", "--fps", default=60, required=False, help="Framerate of the input video, used for trace paths")
+@click.option("-f", "--fps", default=60.0, required=False, help="Framerate of the input video, used for trace paths")
 @click.option("-s", "--start", default=0, required=False, help="Start at this index")
 @click.option("-v", "--vertical", default=None, required=False,
     help="""Vertical video to correlate.
@@ -104,7 +104,7 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
         """)
 @click.option("-o", "--offset", type=click.INT, required=False, default=None, help="How many frames behind vertical is compared to horizontal")
 @click.option("-z", "--viewport_horizontal", nargs=2, default=(20, 35), help="Size of viewable viewport for top-down video (X, then Y) in cm")
-@click.option("-x", "--viewport_vertical", nargs=2, default=(55, 30), help="Size of viewport for vertical video (Y, then Z) in cm. Right now, only Z is used.")
+@click.option("-x", "--viewport_vertical", nargs=2, default=(34, 19), help="Size of viewport for vertical video (Y, then Z) in cm. Right now, only Z is used.")
 def segment(video, height, dest, trace, debug, fps, start, vertical, offset, viewport_horizontal, viewport_vertical):
     if not os.path.exists(video):
         print("Invalid video to trim provided!")
@@ -115,6 +115,9 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
     if vertical and not offset:
         print("Please supply an offset!")
         sys.exit(1)
+
+    viewport_horizontal = viewport_horizontal if vertical else None
+    viewport_vertical = viewport_vertical if vertical else None
 
     VIDEO_SOURCE = cv2.VideoCapture(video)
     VIDEO_VERTICAL = cv2.VideoCapture(vertical) if vertical else None
@@ -206,18 +209,16 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
 
                 print("Generating bounding boxes...")
                 seed_bbox = request_bounding_box(target_segment[0], height)
-                bboxes = [seed_bbox] + generate_random_bounding_boxes(seed_box, count)
+                bboxes = [seed_bbox] + generate_random_bounding_boxes(seed_bbox, 4, initial_frame.shape[1], initial_frame.shape[0])
 
                 print("Performing motion tracking...")
                 for bbox in bboxes:
                     proposed_paths.append(tracepath_from_frames(target_segment, viewport_horizontal, height, fps, 
                         tracker=Tracker(target_segment[0], 'CSRT', height, bbox=bbox)))
 
-                save_proposed_paths(proposed_paths)
-
                 path_index = 0
                 for path_obj in proposed_paths:
-                    draw_tracepoints(path, title="Proposed Path")
+                    draw_tracepoints(path_obj, title="Proposed Path")
 
                     key = cv2.waitKey(0) & 0xFF
                     if key == ord('q'):

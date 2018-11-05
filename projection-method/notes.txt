@@ -1,7 +1,12 @@
 VIDEO OFFSET: VIDEO A IS 310-315 FRAMES AHEAD OF VIDEO B
-e.g. python3 trim.py ../clips/aligned/horizontal.MP4 --dest ../data_thebigone --start 10 --height 1000 --trace --vertical ../clips/aligned/vertical.MP4 --offset -310
+e.g. python3 trim.py ../clips/aligned/horizontal.MP4 --dest ../data_thebigone --start 10 --height 1000 --trace --vertical ../clips/aligned/vertical.MP4 --offset -17
 
-Use --angle 45 0 270
+TRANSFORM FROM TOPDOWN TO HORIZONTAL: --angle 0 -90 -90
+
+TRANSFORM FROM TOPDOWN TO 45 ANGLE:
+Use --angle -45 0 270
+
+At position 1 (far position), thing is 9 bricks tall
 
 Order:
 0 - 1

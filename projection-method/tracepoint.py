@@ -46,7 +46,7 @@ class TracePath:
             small_upper_bound = upper_bound - ((big_bound_spread - small_bound_spread) / 2)
 
             new_small_sequence = np.interp(small_sequence, (small_min, small_max), (small_lower_bound, small_upper_bound))
-            small_sequences.append(new_small_sequence)
+            new_small_sequences.append(new_small_sequence)
 
         return (new_big_sequence, new_small_sequences)
 
@@ -55,23 +55,25 @@ class TracePath:
         ys = np.array([p.pos[1] for p in self.path])
         zs = np.array([p.pos[2] for p in self.path])
 
+
         if preserve_aspect_ratio:
             x_diff = xs.max() - xs.min()
             y_diff = ys.max() - ys.min()
-            z_diff = zs.max() - xz.min()
+            z_diff = zs.max() - zs.min()
             max_difference = max(x_diff, y_diff, z_diff)
             if max_difference == x_diff:
-                xs, others = self.normalize_preserving_aspect(xs, [ys, zs], 0, 1)
+                xs, others = self.normalize_preserving_aspect(xs, [ys, zs], low_bound, high_bound)
                 ys = others[0]
                 zs = others[1]
             elif max_difference == y_diff:
-                ys, others = self.normalize_preserving_aspect(ys, [xs, zs], 0, 1)
+                ys, others = self.normalize_preserving_aspect(ys, [xs, zs], low_bound, high_bound)
                 xs = others[0]
                 zs = others[1]
-            elif max_difference = z_diff:
-                zs, others = self.normalize_preserving_aspect(zs, [xs, ys], 0, 1)
+            elif max_difference == z_diff:
+                zs, others = self.normalize_preserving_aspect(zs, [xs, ys], low_bound, high_bound)
                 xs = others[0]
                 ys = others[1]
+
 
             normalized_positions = list(zip(
                 xs, ys, zs

@@ -56,13 +56,10 @@ def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 
 	distance = math.sqrt(dist_x ** 2 + dist_y ** 2)
 	return distance
-	#distance = abs(dist_x) + abs(dist_y)
-	#return distance
 
 def printScores(sorted_distances):
 	for item in sorted_distances:
 		print(item[0] + ": " + str(item[1]))
-
 
 def classifyDTW(candidates, path):
 	"""Uses Dynamic Time Warping to classify a path as one of the candidates.
