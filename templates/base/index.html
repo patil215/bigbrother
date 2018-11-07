@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Base</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    <table id="camera-table">
+        <tr>
+            <td>______________</td>
+            <td>Test / Train</td>
+            <td>
+                <img src="camera-angle.png" />
+            </td>
+            <td>
+                <img src="camera-direction.png" />
+            </td>
+            <td>
+                <img src="camera-distance.png" />
+            </td>
+            <td>
+                _________ mm
+            </td>
+        </tr>
+        <tr>
+            <td>Date</td>
+            <td>Type</td>
+            <td>Angle</td>
+            <td>Direction</td>
+            <td>Distance</td>
+            <td>Focal Length
+                <br/>
+                <span style="font-size: 12px">(35mm Equivalent)</span>
+            </td>
+        </tr>
+    </table>
+    <table id="sequence-list">
+        <tr>
+            <td>
+                <div class="sequence">
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="sequence">
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="dash-wrapper">
+                        <div class="dash">-</div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="dash-wrapper">
+                        <div class="dash">-</div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="dash-wrapper">
+                        <div class="dash">-</div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                    <div class="digit-wrapper">
+                        <div class="digitbox"></div>
+                        <div class="digittext"></div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+
+<script>
+    var table = document.getElementById("sequence-list");
+    for (var i = 0; i < 6; ++i) {
+        var clone = table.children[0].cloneNode(true);
+        table.appendChild(clone);
+    }
+
+    var digittext = Array.from(document.getElementsByClassName("digittext"));
+    var distribution = [];
+    for (var digit of digittext) {
+        var rand = Math.floor(Math.random() * (9 - 0 + 1)) + 0;
+        distribution[rand] = distribution[rand] ? distribution[rand] + 1 : 1;
+        digit.innerHTML = rand;
+    }
+
+    console.log(distribution);
+
+</script>
+
+</html>

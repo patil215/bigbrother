@@ -3,27 +3,44 @@ body {
     font-size: 18px;
 }
 
-td {
-    padding: .25in .5in 0 0;
+#camera-table {
+    text-align: center;
+}
+
+#camera-table td {
+    padding: 0 .1in;
+}
+
+#sequence-list td {
+    padding: .5cm .5cm;
+}
+
+img {
+    height: .75in;
 }
 
 .sequence {
     font-size: 0;
     display: flex;
-    align-items: baseline;
+    align-items: middle;
 }
 
 .digitbox {
-    width: calc(65in / 300);
-    height: calc(105in / 300);
-    border: calc(5in / 300) solid black;
-    margin-right: calc(-5in / 300);
+    width: calc(5cm / 10);
+    height: calc(8.5cm / 10);
+    border: calc(.5cm / 10) solid black;
+    margin-right: calc(-.5cm / 10);
+}
+
+.digittext {
+    font-size: 1cm;
+    max-width: .5cm;
 }
 
 .dash-wrapper {
     display: inline-block;
-    width: calc(65in / 300);
-    height: calc(105in / 300);
+    width: calc(5cm / 10);
+    height: calc(8.5cm / 10);
 }
 
 .dash {
@@ -45,5 +62,5 @@ td {
 
 @page {
     size: A4;
-    margin: .5in;
+    margin: .3in;
 }
