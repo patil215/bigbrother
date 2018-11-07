@@ -1,0 +1,49 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+}
+
+td {
+    padding: .25in .5in 0 0;
+}
+
+.sequence {
+    font-size: 0;
+    display: flex;
+    align-items: baseline;
+}
+
+.digitbox {
+    width: calc(65in / 300);
+    height: calc(105in / 300);
+    border: calc(5in / 300) solid black;
+    margin-right: calc(-5in / 300);
+}
+
+.dash-wrapper {
+    display: inline-block;
+    width: calc(65in / 300);
+    height: calc(105in / 300);
+}
+
+.dash {
+    font-size: 40px;
+    position: relative;
+    top: 40%;
+    transform: translateY(-50%);
+    float: right;
+    margin-right: 1px;
+    /* width: calc(30in / 300);
+    height: calc(16in / 300);
+    background-color: black;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    float: right;
+    margin-right: calc(12in / 300); */
+}
+
+@page {
+    size: A4;
+    margin: .5in;
+}

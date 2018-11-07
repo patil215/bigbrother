@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>IRS</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+    Name _____________ Camera Angle ___________ Camera Direction __________
+    <table id="sequence-list">
+        <tr>
+            <td>
+                <div class="sequence">
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                </div>
+            </td>
+            <td>
+                <div class="sequence">
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="dash-wrapper">
+                        <div class="dash">-</div>
+                    </div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="dash-wrapper">
+                        <div class="dash">-</div>
+                    </div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="dash-wrapper">
+                        <div class="dash">-</div>
+                    </div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                </div>
+            </td>
+            <td>
+                <div class="sequence">
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="dash-wrapper">
+                        <div class="dash">-</div>
+                    </div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="dash-wrapper">
+                        <div class="dash">-</div>
+                    </div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                    <div class="digitbox"></div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+
+<script>
+    var table = document.getElementById("sequence-list");
+    for (var i = 0; i < 100; ++i) {
+        var clone = table.children[0].cloneNode(true);
+        table.appendChild(clone);
+    }
+</script>
+
+</html>
