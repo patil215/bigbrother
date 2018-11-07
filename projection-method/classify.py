@@ -12,7 +12,7 @@ def prep_data(data, R):
 			tracepath.transform(R)
 			tracepath.normalize()
 
-def recursive_segment(tracepath, candidates, num_digits_left, current_path_index=0, STEP_DURATION=50, FPS=29.97):
+def recursive_segment(tracepath, candidates, num_digits_left, current_path_index=0, STEP_DURATION=500, FPS=29.97):
 	if num_digits_left == 0:
 		return [(0, [])]
 
@@ -30,15 +30,16 @@ def recursive_segment(tracepath, candidates, num_digits_left, current_path_index
 		path_slice.normalize()
 
 		# Do our comparing and append the right one
-		candidates_to_consider = {}
 		if num_digits_left % 2 == 0:
-			candidates_to_consider = {"space": candidates["space"]}
+			result, distance = ("space", 0)
 		else:
+			candidates_to_consider = {}
 			for key in candidates:
 				if key != "space":
 					candidates_to_consider[key] = candidates[key]
-		result, distance = classifyDTW(candidates_to_consider, path_slice)
-		print("{} {} {}".format(num_digits_left, result, distance))
+			result, distance = classifyDTW(candidates_to_consider, path_slice)[0]
+
+		#print("{} {} {}".format(num_digits_left, result, distance))
 
 		# Get top 10 of next recursive indices
 		children = recursive_segment(tracepath, candidates, num_digits_left - 1, index_segment[1] + 1)
@@ -47,8 +48,8 @@ def recursive_segment(tracepath, candidates, num_digits_left, current_path_index
 
 	return sorted(children_results)[:10]
 
-def computeSegment(tracepath, candidates, num_digits):
-	return recursive_segment(tracepath, candidates, num_digits)
+def compute_segment(tracepath, candidates, num_digits):
+	return recursive_segment(tracepath, candidates, num_digits * 2 - 1)
 
 def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	dist_x, cost_x, acc_x, path_x = dtw(x_actual, x_test, dist=lambda x, y: abs(x - y))
