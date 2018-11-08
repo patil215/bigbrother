@@ -1,6 +1,13 @@
 body {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 18px;
+    font-size: 14px;
+}
+
+#measure-corner {
+    border-top: 4px solid black;
+    border-left: 4px solid black;
+    height: 12px;
+    width: 12px;
 }
 
 #camera-table {
@@ -8,15 +15,20 @@ body {
 }
 
 #camera-table td {
-    padding: 0 .1in;
+    padding: 0 .5cm;
+}
+
+#sequence-list {
+    display: inline-block;
 }
 
 #sequence-list td {
-    padding: .5cm .5cm;
+    padding-right: 1cm;
+    padding-bottom: .75cm;
 }
 
 img {
-    height: .75in;
+    height: 2.75cm;
 }
 
 .sequence {
@@ -62,5 +74,5 @@ img {
 
 @page {
     size: A4;
-    margin: .3in;
+    margin: 1cm .5cm;
 }
