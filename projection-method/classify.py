@@ -6,29 +6,32 @@ import operator
 from tracepoint import TracePath
 import math
 
-def generate_intervals(start_ind,
+def get_class_time_ranges(data):
+	ranges = {}
+	for class_name in data:
+		start_millis = min([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
+		end_millis = max([tracepath.path[-1].t - tracepath.path[1].t for tracepath in data[class_name]])
+		ranges[class_name] = (start_millis, end_millis)
+	return ranges
+
+
+def generate_intervals(
+		start_frame_index,
+		time_range,
 		path_length,
-		fps,
-		step_start_millis,
-		step_end_millis,
-		step_size_millis,
-		space_start_millis,
-		space_end_millis,
-		space_step_millis
+		fps
 	):
 	MILLIS_PER_FRAME = 1000.0 / fps
-
 	intervals = []
 
-	for start_frame_index in range(start_ind + int(space_start_millis / MILLIS_PER_FRAME), start_ind + int(space_end_millis / MILLIS_PER_FRAME), int(space_step_millis / MILLIS_PER_FRAME)):
-		interval_start_frame = start_frame_index + int(step_start_millis / MILLIS_PER_FRAME)
-		interval_end_frame = start_frame_index + int(step_end_millis / MILLIS_PER_FRAME)
-		frames_per_step = int(step_size_millis / MILLIS_PER_FRAME)
+	interval_start_frame = start_frame_index + int(time_range[0] / MILLIS_PER_FRAME)
+	interval_end_frame = start_frame_index + int(time_range[1] / MILLIS_PER_FRAME)
+	frames_per_step = int(20 / MILLIS_PER_FRAME)
 
-		for end_frame_index in range(interval_start_frame, interval_end_frame, frames_per_step):
-			if end_frame_index >= path_length:
-				break  # Don't include segments going out of bounds
-			intervals.append((start_frame_index, end_frame_index))
+	for end_frame_index in range(interval_start_frame, interval_end_frame, frames_per_step):
+		if end_frame_index >= path_length:
+			break  # Don't include segments going out of bounds
+		intervals.append((start_frame_index, end_frame_index))
 
 	return intervals
 
@@ -42,10 +45,7 @@ def print_classifications(classification_lists):
 	print()
 
 def bfs_segment(tracepath, candidates, num_digits, fps, 
-		K=10,
-		STEP_START_MILLIS=400,
-		STEP_END_MILLIS=1000,
-		STEP_SIZE_MILLIS=50,
+		K=1,
 		SPACE_START_MILLIS=500,
 		SPACE_END_MILLIS=1000,
 		SPACE_STEP_MILLIS=100
@@ -55,19 +55,32 @@ def bfs_segment(tracepath, candidates, num_digits, fps,
 	num_digits_sequenced = 0
 	MILLIS_PER_FRAME = 1000.0 / fps
 
+	class_time_ranges = get_class_time_ranges(candidates)
+
+	num_digits = num_digits * 2 - 1  # Add room for spaces
+
 	while num_digits_sequenced < num_digits:
 		new_classifications = []
 		for classification_list in current_classifications:
 			latest_score, latest_class, latest_frame_start_index, latest_frame_end_index = classification_list[-1]
 
-			new_intervals = generate_intervals(latest_frame_end_index, len(tracepath.path), fps, STEP_START_MILLIS, STEP_END_MILLIS, STEP_SIZE_MILLIS, SPACE_START_MILLIS, SPACE_END_MILLIS, SPACE_STEP_MILLIS)
-			for start_index, end_index in new_intervals:
-				path_slice = TracePath(path=tracepath.path[start_index:end_index + 1])
-				path_slice.normalize()
-				result, distance = classifyDTW(candidates, path_slice)[0]
+			classes_to_consider = []
+			if num_digits_sequenced % 2 == 1:
+				classes_to_consider = ["space"]
+			else:
+				classes_to_consider = list(candidates.keys())
+				classes_to_consider.remove("space")
 
-				new_classification_list = classification_list + [(latest_score + distance, result, start_index, end_index)]
-				new_classifications.append(new_classification_list)
+			for class_name in classes_to_consider:
+				new_intervals = generate_intervals(latest_frame_end_index, class_time_ranges[class_name], len(tracepath.path), fps)
+				for start_index, end_index in new_intervals:
+					path_slice = TracePath(path=tracepath.path[start_index:end_index + 1])
+					path_slice.normalize()
+					candidates_to_consider = {class_name: candidates[class_name]}
+					result, distance = classifyDTW(candidates_to_consider, path_slice)[0]
+
+					new_classification_list = classification_list + [(latest_score + distance, result, start_index, end_index)]
+					new_classifications.append(new_classification_list)
 
 		# Take the top K
 		current_classifications = sorted(new_classifications, key=lambda classification_list: classification_list[-1])[:K]
@@ -142,9 +155,6 @@ def classifyDTW(candidates, path):
 	#results = []
 	results = {}
 	for name in candidates.keys():
-		if name == 'space':
-			continue
-
 		minDist = min([computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
 			for candidate in candidates[name]])
 		results[name] = minDist

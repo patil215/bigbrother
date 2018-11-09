@@ -15,7 +15,6 @@ from classify import classifyDTW, computeSegment, prep_data
 from vizutils import draw_tracepoints, plotPath
 from readvideo import getTracePathFromVideoFile
 
-
 def playVideo(filename, height, fps):
 	video_segment = read_obj(filename)
 	print("Video is " + str(len(video_segment) * (1 / 29.97)) + " seconds long") # TODO hardcoded FPS

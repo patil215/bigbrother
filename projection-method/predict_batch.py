@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tabulate import tabulate
 
-from classify import classifyDTW, compute_segment, prep_data, bfs_segment
+from classify import classifyDTW, compute_segment, prep_data, bfs_segment, get_class_time_ranges
 from fileutils import read_obj, write_obj, read_training_data, get_test_segment_tree, get_test_path_tree
 from motiontrack import Tracker
 from project import eulerAnglesToRotationMatrix
@@ -79,6 +79,8 @@ def predict(test_dir, fps, height, data, angle, length):
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
 	prep_data(training_data, transform)
+
+	print(get_class_time_ranges(training_data))
 
 	statistics = defaultdict(lambda: defaultdict(int))
 
