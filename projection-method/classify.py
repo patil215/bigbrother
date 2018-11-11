@@ -45,7 +45,7 @@ def print_classifications(classification_lists):
 	print()
 
 def bfs_segment(tracepath, candidates, num_digits, fps, 
-		K=1,
+		K=5,
 		SPACE_START_MILLIS=500,
 		SPACE_END_MILLIS=1000,
 		SPACE_STEP_MILLIS=100
@@ -83,7 +83,21 @@ def bfs_segment(tracepath, candidates, num_digits, fps,
 					new_classifications.append(new_classification_list)
 
 		# Take the top K
-		current_classifications = sorted(new_classifications, key=lambda classification_list: classification_list[-1])[:K]
+		sorted_classifications = sorted(new_classifications, key=lambda classification_list: classification_list[-1])
+
+		# Implement affirmative action
+		unique_classes = set()
+		unique_classifications = list()
+		for classification in sorted_classifications:
+			classes = tuple([x[1] for x in classification[1:]])
+
+			if classes not in unique_classes:
+				unique_classes.add(classes)
+				unique_classifications.append(classification)
+			if len(unique_classes) >= K * (num_digits_sequenced + 1):
+				break
+
+		current_classifications = unique_classifications
 		print_classifications(current_classifications)
 		num_digits_sequenced += 1
 
