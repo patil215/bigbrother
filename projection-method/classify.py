@@ -7,13 +7,16 @@ import math
 import matplotlib.pyplot as plt
 from numpy import std
 
-def get_class_time_ranges(data):
+def get_class_time_ranges(data, z_index=2):
 	ranges = {}
 	for class_name in data:
 		start_millis = min([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
 		end_millis = max([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
+		average = (start_millis + end_millis) / 2
 		stdev = std([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
-		ranges[class_name] = (max(start_millis - stdev, 0), end_millis + stdev)
+		range_start = max(0, start_millis - (stdev * z_index))
+		range_end = end_millis + (stdev * z_index)
+		ranges[class_name] = (range_start, range_end)
 	return ranges
 
 def generate_intervals(
