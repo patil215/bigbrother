@@ -48,23 +48,21 @@ def print_statistics(statistics):
 		)
 	)
 
-def do_prediction(training_data, path, sequence_length, statistics, video_class, fps):
+def do_prediction(training_data, path, sequence_length, statistics, video_class):
 	if sequence_length == 1:
 		classifications = classifyDTW(training_data, path)
 		update_statistics(statistics, classifications, video_class)
 	else:
 		print(video_class)
-		bfs_segment(path, training_data, sequence_length, fps)
+		bfs_segment(path, training_data, sequence_length)
 
 
 @click.command()
 @click.argument('test_dir')
-@click.argument('fps', type=click.FLOAT)
-@click.option('-h', '--height', help="Video display height", default=700)
 @click.option('-d', '--data', help="Location of the data directory", default="data")
 @click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=(0, 0, 0))
 @click.option('-l', '--length', help="Digit sequence length", default=1)
-def predict(test_dir, fps, height, data, angle, length):
+def predict(test_dir, data, angle, length):
 	if not os.path.exists(test_dir):
 		print("Invalid test directory provided!")
 		return
@@ -73,14 +71,11 @@ def predict(test_dir, fps, height, data, angle, length):
 		return
 
 	path_tree = get_test_path_tree(test_dir)
-	video_tree = get_test_segment_tree(test_dir)
 	training_data = read_training_data(data)
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
 	prep_data(training_data, transform)
-
-	print(get_class_time_ranges(training_data))
 
 	statistics = defaultdict(lambda: defaultdict(int))
 
@@ -92,33 +87,7 @@ def predict(test_dir, fps, height, data, angle, length):
 			path = read_obj("{}/{}/{}".format(test_dir, video_class, path_name))
 			path.normalize()
 
-			do_prediction(training_data, path, length, statistics, video_class, fps)
-
-	# Record new paths and classify them for video clips without existing path files.
-	print("Generating paths for new files...")
-	for video_class in video_tree:
-		class_videos = video_tree[video_class]
-		for video_name in class_videos:
-			# Ignore videos which already have a path associated
-			if "{}.path".format(video_name) in path_tree[video_class]:
-				continue
-
-			video = read_obj("{}/{}/{}".format(test_dir, video_class, video_name))
-			metadata_path = "{}/{}/{}".format(test_dir, video_class, ".{}.meta".format(video_name))
-			bbox = read_obj(metadata_path)
-
-			if not bbox:
-				# Prompt for bounding box and store as metadata
-				tracker = Tracker(video[0], height=height)
-				write_obj(metadata_path, tracker.bbox)
-			else:
-				tracker = Tracker(video[0], height=height, bbox=bbox)
-
-			video_data = tracepath_from_frames(video, height=height, fps=fps, tracker=tracker)
-			video_data.normalize()
-			write_obj("{}/{}/{}".format(test_dir, video_class, "{}.path".format(video_name)), video_data)
-
-			do_prediction(training_data, path, length, statistics, video_class, fps)
+			do_prediction(training_data, path, length, statistics, video_class)
 
 	print_statistics(statistics)
 

@@ -23,7 +23,7 @@ def make_process_segment_thread(video_file, dest_path, start_index, end_index):
         args=(video_file, start_index, end_index, dest_path)
     )
 
-def make_process_path_thread(video_file, dest_path, start_index, end_index, viewport, height=700, fps=60):
+def make_process_path_thread(video_file, dest_path, start_index, end_index, viewport, fps, height):
     source = cv2.VideoCapture(video_file)
     source.set(1, start_index)
     ok, raw_frame = source.read()
@@ -93,9 +93,8 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.argument("video")
 @click.option("-h", "--height", default=700, required=False, help="Video preview display height")
 @click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
-@click.option("-t", "--trace", is_flag=True, help="Enable trace path recording mode")
+@click.option("-t", "--trace", is_flag=True, default=True, help="Enable trace path recording mode")
 @click.option("-d", "--debug", is_flag=True, help="Enable trace path debugging", default=False, required=False)
-@click.option("-f", "--fps", default=60.0, required=False, help="Framerate of the input video, used for trace paths")
 @click.option("-s", "--start", default=0, required=False, help="Start at this index")
 @click.option("-v", "--vertical", default=None, required=False,
     help="""Vertical video to correlate.
@@ -105,7 +104,7 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.option("-o", "--offset", type=click.INT, required=False, default=None, help="How many frames behind vertical is compared to horizontal")
 @click.option("-z", "--viewport_horizontal", nargs=2, default=(20, 35), help="Size of viewable viewport for top-down video (X, then Y) in cm")
 @click.option("-x", "--viewport_vertical", nargs=2, default=(34, 19), help="Size of viewport for vertical video (Y, then Z) in cm. Right now, only Z is used.")
-def segment(video, height, dest, trace, debug, fps, start, vertical, offset, viewport_horizontal, viewport_vertical):
+def segment(video, height, dest, trace, debug, start, vertical, offset, viewport_horizontal, viewport_vertical):
     if not os.path.exists(video):
         print("Invalid video to trim provided!")
         sys.exit(1)
@@ -116,11 +115,22 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
         print("Please supply an offset!")
         sys.exit(1)
 
+
     viewport_horizontal = viewport_horizontal if vertical else None
     viewport_vertical = viewport_vertical if vertical else None
 
     VIDEO_SOURCE = cv2.VideoCapture(video)
     VIDEO_VERTICAL = cv2.VideoCapture(vertical) if vertical else None
+
+    fps = VIDEO_SOURCE.get(cv2.CAP_PROP_FPS)
+    print("FPS of source: {}".format(fps))
+    if VIDEO_VERTICAL:
+        fps_vertical = VIDEO_VERTICAL.get(cv2.CAP_PROP_FPS)
+        print("FPS of vertical: {}".format(fps_vertical))
+
+    if vertical and not fps == fps_vertical:
+        print("FPS of both videos don't match ({} vs {})".format(fps, fps_vertical))
+        sys.exit(1)
 
     frame_index = 0
     start_index = 0
@@ -213,7 +223,7 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
 
                 print("Performing motion tracking...")
                 for bbox in bboxes:
-                    proposed_paths.append(tracepath_from_frames(target_segment, viewport_horizontal, height, fps, 
+                    proposed_paths.append(tracepath_from_frames(target_segment, fps, viewport_horizontal, height,
                         tracker=Tracker(target_segment[0], 'CSRT', height, bbox=bbox)))
 
                 path_index = 0
@@ -239,7 +249,8 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
                     start_index,
                     frame_index,
                     viewport_horizontal,
-                    fps=fps
+                    fps,
+                    height
                 )
                 path_save_video_thread.start()
                 threads.append(path_save_video_thread)
@@ -253,7 +264,8 @@ def segment(video, height, dest, trace, debug, fps, start, vertical, offset, vie
                 start_index + offset,
                 frame_index + offset,
                 viewport_vertical,
-                fps=fps
+                fps,
+                height
             )
             path_save_vertical_thread.start()
             threads.append(path_save_vertical_thread)

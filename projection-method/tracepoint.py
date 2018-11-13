@@ -23,6 +23,10 @@ class TracePath:
         if not path:
             self.path = []
 
+    # NOTE: assumes there are no "skipped" frames, and that path is length 2 at least, and t is in ms
+    def fps(self):
+        return 1 / ((self.path[1].t - self.path[0].t) / 1000)
+
     def add(self, tracepoint):
         self.path.append(tracepoint)
 
