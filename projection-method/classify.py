@@ -76,7 +76,9 @@ def bfs_segment(tracepath, candidates, num_digits, K=5):
 			latest_score, latest_class, latest_frame_start_index, latest_frame_end_index = classification_list[-1]
 
 			classes_to_consider = []
+			include_space = False
 			if num_digits_sequenced % 2 == 1:
+				include_space = True
 				classes_to_consider = ["space"]
 			else:
 				classes_to_consider = list(candidates.keys())
@@ -89,7 +91,7 @@ def bfs_segment(tracepath, candidates, num_digits, K=5):
 					path_slice = TracePath(path=tracepath.path[start_index:end_index + 1])
 					path_slice.normalize()
 					candidates_to_consider = {class_name: candidates[class_name]}
-					result, distance = classifyDTW(candidates_to_consider, path_slice)[0]
+					result, distance = classifyDTW(candidates_to_consider, path_slice, include_space=include_space)[0]
 					distance = 0 if result == "space" else distance
 
 					new_classification_list = classification_list + [(latest_score + distance, result, start_index, end_index)]
@@ -133,11 +135,18 @@ def printScores(sorted_distances):
 	for item in sorted_distances:
 		print(item[0] + ": " + str(item[1]))
 
-def classifyDTW(candidates, path):
+def classifyDTW(candidates, path, time_penalty_factor=1250, include_space=False):
 	"""Uses Dynamic Time Warping to classify a path as one of the candidates.
 	Candidates: dict from class name to list of normalized TracePaths, ex) {"zero": [pathName]}
 	path: normalized TracePath, what we're trying to classify.
+	Higher time penalty factor means penalizing less.
 	"""
+	if not include_space and "space" in candidates:
+		del candidates["space"]
+
+	path_length = path.path[-1].t - path.path[0].t
+	time_ranges = get_class_time_ranges(candidates)
+
 	x_actual = path.sequence(0)
 	y_actual = path.sequence(1)
 
@@ -145,7 +154,18 @@ def classifyDTW(candidates, path):
 	for name in candidates.keys():
 		minDist = min([computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
 			for candidate in candidates[name]])
+
+		candidate_range = time_ranges[name]
+		penalty = 0
+		if path_length < candidate_range[0]:
+			penalty = abs(candidate_range[0] - path_length) / time_penalty_factor
+		elif path_length > candidate_range[1]:
+			penalty = abs(candidate_range[1] - path_length) / time_penalty_factor
+		minDist += penalty
+
+
 		results[name] = minDist
+
 
 	sorted_distances = sorted(results.items(), key=operator.itemgetter(1))
 	return sorted_distances
