@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tabulate import tabulate
 
-from classify import classifyDTW, compute_segment, prep_data, bfs_segment, get_class_time_ranges
+from classify import classifyDTW, prep_data, bfs_segment, get_class_time_ranges
 from fileutils import read_obj, write_obj, read_training_data, get_test_segment_tree, get_test_path_tree
 from motiontrack import Tracker
 from project import eulerAnglesToRotationMatrix

@@ -4,13 +4,16 @@ from numpy.linalg import norm
 import operator
 from tracepoint import TracePath
 import math
+import matplotlib.pyplot as plt
+from numpy import std
 
 def get_class_time_ranges(data):
 	ranges = {}
 	for class_name in data:
 		start_millis = min([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
-		end_millis = max([tracepath.path[-1].t - tracepath.path[1].t for tracepath in data[class_name]])
-		ranges[class_name] = (start_millis, end_millis)
+		end_millis = max([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
+		stdev = std([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
+		ranges[class_name] = (max(start_millis - stdev, 0), end_millis + stdev)
 	return ranges
 
 def generate_intervals(
@@ -24,7 +27,7 @@ def generate_intervals(
 
 	interval_start_frame = start_frame_index + int(time_range[0] / MILLIS_PER_FRAME)
 	interval_end_frame = start_frame_index + int(time_range[1] / MILLIS_PER_FRAME)
-	frames_per_step = int(20 / MILLIS_PER_FRAME)
+	frames_per_step = 1
 
 	for end_frame_index in range(interval_start_frame, interval_end_frame, frames_per_step):
 		if end_frame_index >= path_length:
@@ -42,12 +45,23 @@ def print_classifications(classification_lists):
 		print("{}: Times: {} (Score: {})".format("->".join(classes), ",".join(times), total_score))
 	print()
 
-def bfs_segment(tracepath, candidates, num_digits,
-		K=5,
-		SPACE_START_MILLIS=500,
-		SPACE_END_MILLIS=1000,
-		SPACE_STEP_MILLIS=100
-	):
+def plot_interval_vs_score(candidates, class_name, intervals, tracepath):
+	data = []
+	print(intervals)
+	for start_index, end_index in intervals:
+		path_slice = TracePath(path=tracepath.path[start_index:end_index + 1])
+		path_slice.normalize()
+		candidates_to_consider = {class_name: candidates[class_name]}
+		result, distance = classifyDTW(candidates_to_consider, path_slice)[0]
+		data.append(((end_index - start_index), distance))
+
+	plt.plot([x[0] for x in data], [x[1] for x in data])
+	plt.ylabel("Score")
+	plt.xlabel("Interval length (frames)")
+	plt.title("Score for class {}".format(class_name))
+	plt.show()
+
+def bfs_segment(tracepath, candidates, num_digits, K=5):
 	# Format: List[(total_score, class_name, frame_start, frame_end)]
 	current_classifications = [[(0.0, "start", 0, 0)]]
 	num_digits_sequenced = 0
@@ -70,11 +84,13 @@ def bfs_segment(tracepath, candidates, num_digits,
 
 			for class_name in classes_to_consider:
 				new_intervals = generate_intervals(latest_frame_end_index, class_time_ranges[class_name], len(tracepath.path), tracepath.fps())
+				#plot_interval_vs_score(candidates, class_name, new_intervals, tracepath)
 				for start_index, end_index in new_intervals:
 					path_slice = TracePath(path=tracepath.path[start_index:end_index + 1])
 					path_slice.normalize()
 					candidates_to_consider = {class_name: candidates[class_name]}
 					result, distance = classifyDTW(candidates_to_consider, path_slice)[0]
+					distance = 0 if result == "space" else distance
 
 					new_classification_list = classification_list + [(latest_score + distance, result, start_index, end_index)]
 					new_classifications.append(new_classification_list)
