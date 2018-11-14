@@ -153,6 +153,8 @@ def segment(video, height, dest, trace, debug, start, vertical, offset, viewport
                 videoFrames = []
                 start_index = frame_index
                 print("[{0} - ?] Starting at frame {0}".format(start_index))
+                print("Skipping ahead 4 frames...")
+                frame_index += 4
                 continue
             elif key == ord("e"):
                 if frame_index < start_index:
@@ -166,6 +168,12 @@ def segment(video, height, dest, trace, debug, start, vertical, offset, viewport
                 continue
             elif key == ord("n"):
                 frame_index += 1
+                continue
+            elif key == ord("h"):
+                frame_index = frame_index - 2 if frame_index > 1 else frame_index
+                continue
+            elif key == ord("j"):
+                frame_index += 2
                 continue
             elif key == ord("f"):
                 frame_index += 20

@@ -7,7 +7,7 @@ import math
 import matplotlib.pyplot as plt
 from numpy import std
 
-def get_class_time_ranges(data, z_index=2):
+def get_class_time_ranges(data, z_index=2.5):
 	ranges = {}
 	for class_name in data:
 		start_millis = min([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
@@ -166,9 +166,7 @@ def classifyDTW(candidates, path, time_penalty_factor=1250, include_space=False)
 			penalty = abs(candidate_range[1] - path_length) / time_penalty_factor
 		minDist += penalty
 
-
 		results[name] = minDist
-
 
 	sorted_distances = sorted(results.items(), key=operator.itemgetter(1))
 	return sorted_distances
