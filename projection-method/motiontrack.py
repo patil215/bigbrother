@@ -6,6 +6,7 @@ class Tracker:
 
 	def __init__(self, frame, height, bbox=None):
 		"""bbox = bounding box picked out of the image"""
+		"""(x coordinate, y coordinate, width in x, height in y)"""
 		self.tracker = cv2.TrackerCSRT_create()
 		self.height = height
 		if bbox is not None:
