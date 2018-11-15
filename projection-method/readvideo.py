@@ -24,7 +24,7 @@ def tracepoint_from_frame(frame, tracker, frame_index, fps, viewport=None):
 def tracepath_from_frames(video_segment, fps, viewport=None, height=700, tracker=None):
 	tracepath = TracePath()
 	initial_frame = video_segment[0]
-	tracker = tracker if tracker else Tracker(initial_frame, height=height)
+	tracker = tracker if tracker else Tracker(initial_frame, height)
 
 	for frame_index in range(len(video_segment)):
 		frame = video_segment[frame_index]

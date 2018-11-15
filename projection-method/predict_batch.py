@@ -16,9 +16,7 @@ from tabulate import tabulate
 from classify import bfs_segment, classifyDTW, get_class_time_ranges, prep_data
 from fileutils import (get_test_path_tree, get_test_segment_tree, read_obj,
                        read_training_data, write_obj)
-from motiontrack import Tracker
 from project import eulerAnglesToRotationMatrix
-from readvideo import tracepath_from_frames
 from tracepoint import TracePath, TracePoint
 from vizutils import draw_tracepoints, plotPath
 

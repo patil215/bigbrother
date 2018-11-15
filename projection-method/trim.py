@@ -27,7 +27,7 @@ def make_process_path_thread(video_file, dest_path, start_index, end_index, view
     source = cv2.VideoCapture(video_file)
     source.set(1, start_index)
     ok, raw_frame = source.read()
-    tracker = Tracker(raw_frame, 'CSRT', height)
+    tracker = Tracker(raw_frame, height)
 
     return threading.Thread(
         target=save_tracepath_from_raw_video,

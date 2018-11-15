@@ -13,7 +13,7 @@ args = vars(ap.parse_args())
 
 # scale factor for raw video
 # 4K doesn't fit on the screen :(
-FRAME_SCALE_WIDTH = 1600
+FRAME_SCALE_WIDTH = 2000
 
 if __name__ == '__main__' :
  
@@ -109,3 +109,4 @@ if __name__ == '__main__' :
         # Exit if ESC pressed
         k = cv2.waitKey(1) & 0xff
         if k == 27 : break
+        if k == ord('q') : break
