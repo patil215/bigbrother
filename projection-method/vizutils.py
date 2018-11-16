@@ -22,29 +22,26 @@ def create_blank(width, height, rgb_color=(0, 0, 0)):
 
     return image
 
-def draw_tracepoints(tracepath, scale=1.0, fit_canvas=True, color=(255, 255, 255), frame=None, title="Tracepath"):
-	frame = create_blank(512, 512, rgb_color=(0, 0, 0))
+def draw_tracepoints(tracepath, size=512, color=(255, 255, 255), title="Tracepath"):
+	frame = create_blank(size, size, rgb_color=(0, 0, 0))
 
 	"""Given a tracepath, draw the path on the given frame."""
-	tracepath.normalize(0, 512)
+	tracepath.normalize(0, size)
 	xs = np.array([point.pos[0] for point in tracepath.path])
 	ys = np.array([point.pos[1] for point in tracepath.path])
 
-	height = frame.shape[0]
-	width = frame.shape[1]
-
-	if fit_canvas:
-		draw_points = list(zip(xs, ys))
-	else:
-		draw_points = list(zip(xs, ys))
-
-	draw_points = list(map(lambda p: (int(p[0] * scale), int(p[1] * scale)), draw_points))
-
+	draw_points = list(zip(xs, ys))
+	draw_points = list(map(lambda x: (int(x[0]), int(x[1])), draw_points))
 	if len(tracepath.path) <= 1:
 		return
 
 	for i in range(len(tracepath.path) - 1):
-		cv2.line(frame, draw_points[i], draw_points[i + 1], color)
+		x_speed = abs(draw_points[i + 1][0] - draw_points[i][0]) * 4
+		y_speed = abs(draw_points[i + 1][1] - draw_points[i][1]) * 4
+
+		motion_color = (color[0], max(0, color[1] - x_speed), color[2])
+		# print(motion_color)
+		cv2.line(frame, draw_points[i], draw_points[i + 1], motion_color)
 
 	cv2.imshow(title, frame)
 	# cv2.waitKey(0)
@@ -70,14 +67,14 @@ def request_bounding_box(frame, height=700):
 @click.command()
 @click.argument('filename')
 @click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=(0, 0, 0))
-@click.option('-f', '--no-fit-canvas', is_flag=True, help="Don't try to fit canvas")
-def display_tracepoints(filename, angle, no_fit_canvas):
+@click.option('-s', '--size', help="Size of frame", default=512, required=False)
+def display_tracepoints(filename, angle, size):
 	tracepath = read_obj(filename)
 	if tracepath is None:
 		print("The specified file does not exist.")
 		sys.exit(1)
 
-	draw_tracepoints(tracepath, title="{0}".format(filename))
+	draw_tracepoints(tracepath, size=size, title="{0}".format(filename))
 
 	if not angle == (0, 0, 0):
 		x, y, z = [math.radians(int(d)) for d in angle]
@@ -85,7 +82,7 @@ def display_tracepoints(filename, angle, no_fit_canvas):
 		tracepath.transform(R)
 		tracepath.normalize()
 
-		draw_tracepoints(tracepath, fit_canvas=(not no_fit_canvas), title="{0} transformed to {0}".format(filename, angle))
+		draw_tracepoints(tracepath, size=size, title="{0} transformed to {1}".format(filename, angle))
 
 	cv2.waitKey(0)
 
