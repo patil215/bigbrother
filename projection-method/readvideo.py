@@ -32,14 +32,14 @@ def tracepath_from_frames(video_segment, fps, viewport=None, height=700, tracker
 
 	return tracepath
 
-def save_tracepath_from_raw_video(source, initial_frame, end_frame, tracker, save_dest, viewport, fps):
-	print("[{0} - {1}] Beginning tracking...".format(initial_frame, end_frame))
+def save_tracepath_from_raw_video(source, dest_path, start_index, end_index, tracker, viewport, fps):
+	print("[{0} - {1}] Beginning tracking...".format(start_index, end_index))
 	tracepath = TracePath()
-	for i in range(end_frame - initial_frame + 1):
-		source.set(1, initial_frame + i)
+	for i in range(end_index - start_index + 1):
+		source.set(1, start_index + i)
 		ok, raw_frame = source.read()
 		tracepath.add(tracepoint_from_frame(raw_frame, tracker, i, fps, viewport))
 
-	print("[{0} - {1}] {2} length path tracking complete, saving to {3}".format(initial_frame, end_frame, len(tracepath.path), save_dest))
-	write_obj(save_dest, tracepath)
-	print("[{0} - {1}] Path saved successfully to {2}".format(initial_frame, end_frame, save_dest))
+	print("[{0} - {1}] {2} length path tracking complete, saving to {3}".format(start_index, end_index, len(tracepath.path), save_dest))
+	write_obj(dest_path, tracepath)
+	print("[{0} - {1}] Path saved successfully to {2}".format(start_index, end_index, dest_path))

@@ -1,12 +1,16 @@
-import numpy as np
+import math
+import random
+import sys
+
+import click
 import cv2
 import imutils
 import matplotlib.pyplot as plt
-import click
+import numpy as np
+
 from fileutils import read_obj
-import sys
 from project import eulerAnglesToRotationMatrix
-import math
+
 
 def create_blank(width, height, rgb_color=(0, 0, 0)):
     """Create new image(numpy array) filled with certain color in RGB"""
@@ -63,6 +67,25 @@ def request_bounding_box(frame, height=700):
 	new_bbox = (int(bbox[0] * scale), int(bbox[1] * scale),
 				int(bbox[2] * scale), int(bbox[3] * scale))
 	return new_bbox
+
+def generate_random_bounding_boxes(seed_box, count, width, height):
+    # (x, y, width in x, height in y)
+    bboxes = []
+    for i in range(0, count):
+        RAND_RANGE = 3
+        original_bbox = seed_box
+
+        new_x = min(original_bbox[0] + random.randint(-RAND_RANGE, RAND_RANGE), width)
+        new_y = min(original_bbox[1] + random.randint(-RAND_RANGE, RAND_RANGE), height)
+        new_width = original_bbox[2] + random.randint(-RAND_RANGE, RAND_RANGE)
+        if new_x + new_width > width:
+            new_width = width - new_x
+        new_height = original_bbox[3] + random.randint(-RAND_RANGE, RAND_RANGE)
+        if new_y + new_height > height:
+            new_height = height - new_y
+
+        bboxes.append((new_x, new_y, new_width, new_height))
+    return bboxes
 
 @click.command()
 @click.argument('filename')

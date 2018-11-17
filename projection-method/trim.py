@@ -14,16 +14,15 @@ from fileutils import read_video_frames, read_obj, write_video_frames, write_obj
 from motiontrack import Tracker
 from readvideo import save_tracepath_from_raw_video, tracepath_from_frames
 from tracepoint import TracePath, TracePoint
-from vizutils import draw_tracepoints, request_bounding_box
+from vizutils import draw_tracepoints, request_bounding_box, generate_random_bounding_boxes
 
-
-def make_process_segment_thread(video_file, dest_path, start_index, end_index):
+def spawn_segment_save_thread(video_file, dest_path, start_index, end_index):
     return threading.Thread(
         target=write_video_frames,
         args=(video_file, start_index, end_index, dest_path)
     )
 
-def make_process_path_thread(video_file, dest_path, start_index, end_index, viewport, fps, height):
+def spawn_path_track_thread(video_file, dest_path, start_index, end_index, viewport, fps, height):
     source = cv2.VideoCapture(video_file)
     source.set(1, start_index)
     ok, raw_frame = source.read()
@@ -33,33 +32,14 @@ def make_process_path_thread(video_file, dest_path, start_index, end_index, view
         target=save_tracepath_from_raw_video,
         args=(
             source,
+            dest_path,
             start_index,
             end_index,
             tracker,
-            dest_path,
             viewport,
             fps
         )
     )
-
-def generate_random_bounding_boxes(seed_box, count, width, height):
-    # (x, y, width in x, height in y)
-    bboxes = []
-    for i in range(0, count):
-        RAND_RANGE = 3
-        original_bbox = seed_box
-
-        new_x = min(original_bbox[0] + random.randint(-RAND_RANGE, RAND_RANGE), width)
-        new_y = min(original_bbox[1] + random.randint(-RAND_RANGE, RAND_RANGE), height)
-        new_width = original_bbox[2] + random.randint(-RAND_RANGE, RAND_RANGE)
-        if new_x + new_width > width:
-            new_width = width - new_x
-        new_height = original_bbox[3] + random.randint(-RAND_RANGE, RAND_RANGE)
-        if new_y + new_height > height:
-            new_height = height - new_y
-
-        bboxes.append((new_x, new_y, new_width, new_height))
-    return bboxes
 
 def merge_tracepaths(to_merge):
     for path_save_video_dest, path_save_vertical_dest in to_merge:
@@ -203,7 +183,7 @@ def segment(video, height, dest, trace, debug, start, vertical, offset, viewport
             .format(start_index, frame_index, frame_index + 1 - start_index)
         )
         segment_save_dest = "{}/segments/{}/{}.segment".format(dest, class_name, str(clip_index))
-        segment_save_thread = make_process_segment_thread(
+        segment_save_thread = spawn_segment_save_thread(
             video,
             segment_save_dest,
             start_index,
@@ -251,7 +231,7 @@ def segment(video, height, dest, trace, debug, start, vertical, offset, viewport
 
             # If not debugging, trace and save asynchronously
             else:
-                path_save_video_thread = make_process_path_thread(
+                path_save_video_thread = spawn_path_track_thread(
                     video,
                     path_save_video_dest,
                     start_index,
@@ -266,7 +246,7 @@ def segment(video, height, dest, trace, debug, start, vertical, offset, viewport
         if trace and VIDEO_VERTICAL:
             # We need to find the TracePath for both segments, and schedule a merge later.
             path_save_vertical_dest = "{}/paths_vertical/{}/{}.vsegment".format(dest, class_name, str(clip_index))
-            path_save_vertical_thread = make_process_path_thread(
+            path_save_vertical_thread = spawn_path_track_thread(
                 vertical,
                 path_save_vertical_dest,
                 start_index + offset,
