@@ -46,6 +46,8 @@ def draw_tracepoints(tracepath, size=512, color=(255, 255, 255), title="Tracepat
 		motion_color = (color[0], max(0, color[1] - x_speed), color[2])
 		# print(motion_color)
 		cv2.line(frame, draw_points[i], draw_points[i + 1], motion_color)
+		if i in tracepath.checkpoint_indices:
+			cv2.circle(frame, draw_points[i], 8, (0, 255, 255))
 
 	cv2.imshow(title, frame)
 	# cv2.waitKey(0)
@@ -99,7 +101,7 @@ def display_tracepoints(filename, angle, size):
 
 	draw_tracepoints(tracepath, size=size, title="{0}".format(filename))
 
-	if not angle == (0, 0, 0):
+	if not angle == (0, 0, 0):																																								
 		x, y, z = [math.radians(int(d)) for d in angle]
 		R = eulerAnglesToRotationMatrix(np.array([x, y, z]))
 		tracepath.transform(R)

@@ -20,6 +20,7 @@ class TracePath:
 
     def __init__(self, path=None):
         self.path = path
+        self.checkpoint_indices = set()
         if not path:
             self.path = []
 
@@ -27,11 +28,13 @@ class TracePath:
     def fps(self):
         return 1 / ((self.path[1].t - self.path[0].t) / 1000)
 
-    def add(self, tracepoint):
+    def add(self, tracepoint, checkpoint=False):
+        if checkpoint:
+            self.checkpoint_indices.add(len(self.path))
+
         self.path.append(tracepoint)
 
     def transform(self, rotation_matrix):
-        transformed = []
         for point in self.path:
             point.transform(rotation_matrix)
 
