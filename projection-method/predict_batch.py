@@ -121,6 +121,7 @@ def do_prediction(training_data, path, sequence_length, statistics, video_class)
 		update_statistics(statistics, classifications, video_class)
 	else:
 		print(video_class)
+		print(sorted(list(path.checkpoint_indices)))
 		bfs_segment(path, training_data, sequence_length)
 
 

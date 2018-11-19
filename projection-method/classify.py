@@ -33,6 +33,8 @@ def generate_intervals(
 	frames_per_step = 1
 
 	for end_frame_index in range(interval_start_frame, interval_end_frame, frames_per_step):
+		if end_frame_index - start_frame_index == 0:
+			continue
 		if end_frame_index >= path_length:
 			break  # Don't include segments going out of bounds
 		intervals.append((start_frame_index, end_frame_index))
@@ -64,7 +66,7 @@ def plot_interval_vs_score(candidates, class_name, intervals, tracepath):
 	plt.title("Score for class {}".format(class_name))
 	plt.show()
 
-def bfs_segment(tracepath, candidates, num_digits, K=5):
+def bfs_segment(tracepath, candidates, num_digits, K=5, allow_growth=True):
 	# Format: List[(total_score, class_name, frame_start, frame_end)]
 	current_classifications = [[(0.0, "start", 0, 0)]]
 	num_digits_sequenced = 0
@@ -89,13 +91,11 @@ def bfs_segment(tracepath, candidates, num_digits, K=5):
 
 			for class_name in classes_to_consider:
 				new_intervals = generate_intervals(latest_frame_end_index, class_time_ranges[class_name], len(tracepath.path), tracepath.fps())
-				#plot_interval_vs_score(candidates, class_name, new_intervals, tracepath)
 				for start_index, end_index in new_intervals:
 					path_slice = TracePath(path=tracepath.path[start_index:end_index + 1])
 					path_slice.normalize()
 					candidates_to_consider = {class_name: candidates[class_name]}
 					result, distance = classifyDTW(candidates_to_consider, path_slice, include_space=include_space)[0]
-					distance = 0 if result == "space" else distance
 
 					new_classification_list = classification_list + [(latest_score + distance, result, start_index, end_index)]
 					new_classifications.append(new_classification_list)
@@ -112,7 +112,9 @@ def bfs_segment(tracepath, candidates, num_digits, K=5):
 			if classes not in unique_classes:
 				unique_classes.add(classes)
 				unique_classifications.append(classification)
-			if len(unique_classes) >= K * (num_digits_sequenced + 1):
+			
+			bound = K * (num_digits_sequenced + 1) if allow_growth else K
+			if len(unique_classes) >= bound:
 				break
 
 		current_classifications = unique_classifications

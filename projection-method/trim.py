@@ -52,9 +52,14 @@ def merge_tracepaths(to_merge):
 
         # Merge the two tracepaths
         merged_tracepath = TracePath()
-        for xy, z in zip(tracepath_xy.path, tracepath_z.path):
-            # The Y position in Z is the height, hence z.pos[1]
-            merged_tracepath.add(TracePoint((xy.pos[0], xy.pos[1], z.pos[1]), xy.t))
+        if len(tracepath_xy.path) != len(tracepath_z.path):
+            print("Warning: path lengths are not equal")
+
+        for i in range(len(tracepath_xy.path)):
+            xy = tracepath_xy.path[i]
+            z = tracepath_z.path[i]
+            is_checkpoint = i in tracepath_xy.checkpoint_indices
+            merged_tracepath.add(TracePoint((xy.pos[0], xy.pos[1], z.pos[1]), xy.t), is_checkpoint)
 
         # Write the final result
         path_save_merged_dest = path_save_video_dest.replace("paths", "paths_merged")
@@ -140,8 +145,8 @@ def segment(video, height, dest, no_trace, debug, start, vertical, offset, viewp
                 checkpoint_indices = set()
 
                 print("[{0} - ?] Starting at frame {0}".format(start_index))
-                print("Skipping ahead 6 frames...")
-                frame_index += 6
+                print("Skipping ahead 10 frames...")
+                frame_index += 10
                 continue
 
             elif key == ord("e"):
@@ -159,8 +164,8 @@ def segment(video, height, dest, no_trace, debug, start, vertical, offset, viewp
                     print("[{} - ?] Marking checkpoint #{} at frame {} (+{})".format(
                         start_index, len(checkpoint_indices), frame_index, frame_index - start_index
                     ))
-                    print("Skipping ahead 6 frames...")
-                    frame_index += 6
+                    print("Skipping ahead 10 frames...")
+                    frame_index += 10
 
                 continue
 

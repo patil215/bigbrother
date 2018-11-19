@@ -39,6 +39,7 @@ def draw_tracepoints(tracepath, size=512, color=(255, 255, 255), title="Tracepat
 	if len(tracepath.path) <= 1:
 		return
 
+	cv2.circle(frame, draw_points[0], 10, (0, 255, 0))
 	for i in range(len(tracepath.path) - 1):
 		x_speed = abs(draw_points[i + 1][0] - draw_points[i][0]) * 4
 		y_speed = abs(draw_points[i + 1][1] - draw_points[i][1]) * 4
@@ -46,8 +47,12 @@ def draw_tracepoints(tracepath, size=512, color=(255, 255, 255), title="Tracepat
 		motion_color = (color[0], max(0, color[1] - x_speed), color[2])
 		# print(motion_color)
 		cv2.line(frame, draw_points[i], draw_points[i + 1], motion_color)
-		if i in tracepath.checkpoint_indices:
-			cv2.circle(frame, draw_points[i], 8, (0, 255, 255))
+
+		try:
+			if i in tracepath.checkpoint_indices:
+				cv2.circle(frame, draw_points[i], 8, (0, 255, 255))
+		except AttributeError:
+			pass
 
 	cv2.imshow(title, frame)
 	# cv2.waitKey(0)
