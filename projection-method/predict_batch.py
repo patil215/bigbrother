@@ -142,7 +142,7 @@ def find_space_frames(path, num_to_find):
 	valid_indices = set([i for i in range(len(path))])
 	while len(space_frames) < num_to_find:
 		greatest_speed_index = find_greatest_speed_index(path, valid_indices)
-		for i in range(greatest_speed_index - 15, greatest_speed_index0.005099617485316769, 75 + 15): # TODO don't hardcode frames
+		for i in range(greatest_speed_index - 15, greatest_speed_index + 15): # TODO don't hardcode frames
 			if i in valid_indices:
 				valid_indices.remove(i)
 
@@ -151,6 +151,10 @@ def find_space_frames(path, num_to_find):
 		space_frames.append((greatest_speed_index - 3, find_lowest_speed_indices(path, (start_low_range, end_low_range))))
 	return sorted(space_frames)
 
+def predict_space_frames(video_class, path, sequence_length):
+	space_frames = find_space_frames(path.path, sequence_length - 1)
+	print(space_frames)
+	print(sorted(list(path.checkpoint_indices)))
 
 def do_prediction(training_data, path, sequence_length, statistics, video_class):
 	if sequence_length == 1:
@@ -158,11 +162,6 @@ def do_prediction(training_data, path, sequence_length, statistics, video_class)
 		update_statistics(statistics, classifications, video_class)
 	else:
 		print(video_class)
-		#space_frames = find_space_frames(path.path, sequence_length - 1)
-		#print(space_frames)
-		print(sorted(list(path.checkpoint_indices)))
-		#return
-
 		print(sorted(list(path.checkpoint_indices)))
 		bfs_segment(path, training_data, sequence_length)
 
@@ -197,6 +196,12 @@ def predict(test_dir, data, angle, length):
 			path = read_obj(
 				"{}/{}/{}".format(test_dir, video_class, path_name))
 			path.normalize()
+
+			# TODO we might not actually want to do the inverse here
+			transform_inverse = eulerAnglesToRotationMatrix(np.array([-x, -y, -z]))
+			inverse_path = TracePath(path=path.path, checkpoint_indices=path.checkpoint_indices)
+			inverse_path.transform(transform_inverse)
+			predict_space_frames(video_class, inverse_path, length)
 
 			do_prediction(training_data, path, length, statistics, video_class)
 

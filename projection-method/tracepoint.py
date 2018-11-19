@@ -18,11 +18,13 @@ class TracePoint:
 class TracePath:
     """Consists of a list of tracepoints."""
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, checkpoint_indices=None):
         self.path = path
-        self.checkpoint_indices = set()
+        self.checkpoint_indices = checkpoint_indices
         if not path:
             self.path = []
+        if not checkpoint_indices:
+            self.checkpoint_indices = set()
 
     # NOTE: assumes there are no "skipped" frames, and that path is length 2 at least, and t is in ms
     def fps(self):
