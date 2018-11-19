@@ -40,19 +40,49 @@ def draw_tracepoints(tracepath, size=512, color=(255, 255, 255), title="Tracepat
 		return
 
 	cv2.circle(frame, draw_points[0], 10, (0, 255, 0))
+
+	positions_y = []
+	velocities_y = []
+	positions_x = []
+	velocities_x = []
+	speeds = []
 	for i in range(len(tracepath.path) - 1):
 		x_speed = abs(draw_points[i + 1][0] - draw_points[i][0]) * 4
-		y_speed = abs(draw_points[i + 1][1] - draw_points[i][1]) * 4
+		y_speed = abs(draw_points[i + 1][1] - draw_points[i][1]) * 8
+		total_speed = math.sqrt(x_speed ** 2 + y_speed ** 2)
 
-		motion_color = (color[0], max(0, color[1] - x_speed), color[2])
+		motion_color = (color[0], max(0, color[1] - y_speed), color[2])
 		# print(motion_color)
 		cv2.line(frame, draw_points[i], draw_points[i + 1], motion_color)
+
+		positions_x.append((i, draw_points[i][0]))
+		velocities_x.append((i, x_speed))
+		positions_y.append((i, draw_points[i][1]))
+		velocities_y.append((i, y_speed))
+		speeds.append((i, total_speed))
 
 		try:
 			if i in tracepath.checkpoint_indices:
 				cv2.circle(frame, draw_points[i], 8, (0, 255, 255))
 		except AttributeError:
 			pass
+
+	plt.figure(figsize=(20,20))
+
+
+	"""plt.plot([p[0] for p in positions_x], [p[1] for p in positions_x], color='red')
+	plt.plot([p[0] for p in velocities_x], [p[1] for p in velocities_x], color='purple')
+	plt.plot([p[0] for p in positions_y], [p[1] for p in positions_y], color='green')
+	plt.plot([p[0] for p in velocities_y], [p[1] for p in velocities_y], color='blue')
+
+	plt.scatter([p for p in tracepath.checkpoint_indices], [positions_x[p][1] for p in tracepath.checkpoint_indices], s=80, facecolors='none', edgecolors='r')
+	plt.scatter([p for p in tracepath.checkpoint_indices], [velocities_x[p][1] for p in tracepath.checkpoint_indices], s=80, facecolors='none', edgecolors='r')
+	plt.scatter([p for p in tracepath.checkpoint_indices], [positions_y[p][1] for p in tracepath.checkpoint_indices], s=80, facecolors='none', edgecolors='r')
+	plt.scatter([p for p in tracepath.checkpoint_indices], [velocities_y[p][1] for p in tracepath.checkpoint_indices], s=80, facecolors='none', edgecolors='r')"""
+	plt.plot([p[0] for p in speeds], [p[1] for p in speeds], color="green")
+	plt.scatter([p for p in tracepath.checkpoint_indices], [speeds[p][1] for p in tracepath.checkpoint_indices], s=80, facecolors='none', edgecolors='r')
+	plt.xlabel(title)
+	plt.show()
 
 	cv2.imshow(title, frame)
 	# cv2.waitKey(0)
