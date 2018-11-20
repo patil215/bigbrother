@@ -80,6 +80,7 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 
 @click.command()
 @click.argument("video")
+@click.option("-c", "--compressed", default=None, required=False, help="Compressed video to display for fast loading")
 @click.option("-h", "--height", default=700, required=False, help="Video preview display height")
 @click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
 @click.option("-t", "--no_trace", is_flag=True, default=False, help="Disable trace path recording mode")
@@ -93,9 +94,12 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.option("-o", "--offset", type=click.INT, required=False, default=None, help="How many frames behind vertical is compared to horizontal")
 @click.option("-z", "--viewport_horizontal", nargs=2, default=(20, 35), help="Size of viewable viewport for top-down video (X, then Y) in cm")
 @click.option("-x", "--viewport_vertical", nargs=2, default=(34, 19), help="Size of viewport for vertical video (Y, then Z) in cm. Right now, only Z is used.")
-def segment(video, height, dest, no_trace, debug, start, vertical, offset, viewport_horizontal, viewport_vertical):
+def segment(video, compressed, height, dest, no_trace, debug, start, vertical, offset, viewport_horizontal, viewport_vertical):
     if not os.path.exists(video):
         print("Invalid video to trim provided!")
+        sys.exit(1)
+    if compressed and not os.path.exists(compressed):
+        print("Invalid compressed video provided!")
         sys.exit(1)
     if vertical and not os.path.exists(vertical):
         print("Invalid vertical video provided!")
@@ -104,15 +108,25 @@ def segment(video, height, dest, no_trace, debug, start, vertical, offset, viewp
         print("Please supply an offset!")
         sys.exit(1)
 
-
     viewport_horizontal = viewport_horizontal if vertical else None
     viewport_vertical = viewport_vertical if vertical else None
 
     VIDEO_SOURCE = cv2.VideoCapture(video)
+    VIDEO_COMPRESSED_SOURCE = cv2.VideoCapture(compressed) if compressed else None
     VIDEO_VERTICAL = cv2.VideoCapture(vertical) if vertical else None
 
+    # sanity check FPSes
     fps = VIDEO_SOURCE.get(cv2.CAP_PROP_FPS)
     print("FPS of source: {}".format(fps))
+
+    if VIDEO_COMPRESSED_SOURCE:
+        fps_compressed = VIDEO_COMPRESSED_SOURCE.get(cv2.CAP_PROP_FPS)
+        print("FPS of compressed: {}".format(fps_compressed))
+
+    if compressed and not fps == fps_compressed:
+        print("FPS of source and compressed videos don't match ({} vs {})".format(fps, fps_compressed))
+        sys.exit(1)
+
     if VIDEO_VERTICAL:
         fps_vertical = VIDEO_VERTICAL.get(cv2.CAP_PROP_FPS)
         print("FPS of vertical: {}".format(fps_vertical))
@@ -120,6 +134,10 @@ def segment(video, height, dest, no_trace, debug, start, vertical, offset, viewp
     if vertical and not fps == fps_vertical:
         print("FPS of both videos don't match ({} vs {})".format(fps, fps_vertical))
         sys.exit(1)
+
+    # display the compressed video instead of the raw video if there is one
+    if VIDEO_COMPRESSED_SOURCE:
+        VIDEO_SOURCE = VIDEO_COMPRESSED_SOURCE
 
     frame_index = 0
     start_index = 0
@@ -273,7 +291,7 @@ def segment(video, height, dest, no_trace, debug, start, vertical, offset, viewp
             path_save_video_thread.start()
             threads.append(path_save_video_thread)
 
-        if VIDEO_VERTICAL:
+        if vertical:
             # We need to find the TracePath for both segments, and schedule a merge later.
             path_save_vertical_dest = "{}/paths_vertical/{}/{}.vsegment".format(dest, class_name, str(clip_index))
             path_save_vertical_thread = spawn_path_track_thread(
