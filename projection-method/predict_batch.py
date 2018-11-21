@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from tabulate import tabulate
 
-from classify import bfs_segment, classifyDTW, get_class_time_ranges, prep_data
+from classify import bfs_segment, classifyDTW, get_class_time_ranges, prep_data, predict_space_frames, new_prediction
 from fileutils import (get_test_path_tree, get_test_segment_tree, read_obj,
                        read_training_data, write_obj)
 from project import eulerAnglesToRotationMatrix
@@ -114,56 +114,17 @@ def print_statistics(statistics):
 
 	plt.show()
 
-def find_greatest_speed_index(path, valid_indices):
-	greatest_speed = 0
-	greatest_speed_index = 0
-	for i in range(len(path) - 1):
-		velocity_x = path[i + 1].pos[0] - path[i].pos[0]
-		velocity_y = path[i + 1].pos[1] - path[i].pos[1]
-		speed = math.sqrt(velocity_x**2 + velocity_y**2)
-		if speed > greatest_speed and i in valid_indices:
-			greatest_speed = speed
-			greatest_speed_index = i
-
-	return greatest_speed_index
-
-def find_lowest_speed_indices(path, range_inds):
-	speeds = [] # Tuple of (speed, index)
-	for i in range(range_inds[0], range_inds[1]):
-		velocity_x = path[i + 1].pos[0] - path[i].pos[0]
-		velocity_y = path[i + 1].pos[1] - path[i].pos[1]
-		speed = math.sqrt(velocity_x**2 + velocity_y**2)
-		speeds.append((speed, i))
-	return [p[1] for p in sorted(speeds)[:2]]
-
-
-def find_space_frames(path, num_to_find):
-	space_frames = []
-	valid_indices = set([i for i in range(len(path))])
-	while len(space_frames) < num_to_find:
-		greatest_speed_index = find_greatest_speed_index(path, valid_indices)
-		for i in range(greatest_speed_index - 15, greatest_speed_index + 15): # TODO don't hardcode frames
-			if i in valid_indices:
-				valid_indices.remove(i)
-
-		start_low_range = greatest_speed_index + 15
-		end_low_range = min(len(path), greatest_speed_index + 25)
-		space_frames.append((greatest_speed_index - 3, find_lowest_speed_indices(path, (start_low_range, end_low_range))))
-	return sorted(space_frames)
-
-def predict_space_frames(video_class, path, sequence_length):
-	space_frames = find_space_frames(path.path, sequence_length - 1)
-	print(space_frames)
-	print(sorted(list(path.checkpoint_indices)))
-
 def do_prediction(training_data, path, sequence_length, statistics, video_class):
 	if sequence_length == 1:
 		classifications = classifyDTW(training_data, path)
 		update_statistics(statistics, classifications, video_class)
 	else:
 		print(video_class)
-		print(sorted(list(path.checkpoint_indices)))
-		bfs_segment(path, training_data, sequence_length)
+		#print(sorted(list(path.checkpoint_indices)))
+		print(new_prediction(path, training_data, sequence_length))
+		print()
+		print()
+		#bfs_segment(path, training_data, sequence_length)
 
 
 @click.command()
@@ -197,12 +158,7 @@ def predict(test_dir, data, angle, length):
 				"{}/{}/{}".format(test_dir, video_class, path_name))
 			path.normalize()
 
-			# TODO we might not actually want to do the inverse here
-			transform_inverse = eulerAnglesToRotationMatrix(np.array([-x, -y, -z]))
-			inverse_path = TracePath(path=path.path, checkpoint_indices=path.checkpoint_indices)
-			inverse_path.transform(transform_inverse)
-			predict_space_frames(video_class, inverse_path, length)
-
+			#predict_space_frames(video_class, inverse_path, length)
 			do_prediction(training_data, path, length, statistics, video_class)
 
 	print_statistics(statistics)

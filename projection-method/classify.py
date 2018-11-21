@@ -7,6 +7,89 @@ import math
 import matplotlib.pyplot as plt
 from numpy import std
 
+def predict_space_frames(video_class, path, sequence_length):
+	space_frames = find_space_frames(path.path, sequence_length - 1)
+	print(space_frames)
+
+def find_greatest_speed_index(path, valid_indices):
+	greatest_speed = 0
+	greatest_speed_index = 0
+	for i in range(len(path) - 1):
+		velocity_x = path[i + 1].pos[0] - path[i].pos[0]
+		velocity_y = path[i + 1].pos[1] - path[i].pos[1]
+		speed = math.sqrt(velocity_x**2 + velocity_y**2)
+		if speed > greatest_speed and i in valid_indices:
+			greatest_speed = speed
+			greatest_speed_index = i
+
+	return greatest_speed_index
+
+def find_lowest_speed_indices(path, range_inds):
+	speeds = [] # Tuple of (speed, index)
+	for i in range(range_inds[0], range_inds[1]):
+		velocity_x = path[i + 1].pos[0] - path[i].pos[0]
+		velocity_y = path[i + 1].pos[1] - path[i].pos[1]
+		speed = math.sqrt(velocity_x**2 + velocity_y**2)
+		speeds.append((speed, i))
+	return [p[1] for p in sorted(speeds)[:2]]
+
+
+def find_space_frames(path, num_to_find):
+	space_frames = []
+	valid_indices = set([i for i in range(len(path))])
+	while len(space_frames) < num_to_find:
+		greatest_speed_index = find_greatest_speed_index(path, valid_indices)
+		for i in range(greatest_speed_index - 15, greatest_speed_index + 15): # TODO don't hardcode frames
+			if i in valid_indices:
+				valid_indices.remove(i)
+
+		start_low_range = greatest_speed_index + 15
+		end_low_range = min(len(path), greatest_speed_index + 25)
+		#space_frames.append((greatest_speed_index - 3, find_lowest_speed_indices(path, (start_low_range, end_low_range))))
+		space_frames.append(greatest_speed_index - 3)
+	return sorted(space_frames)
+
+def new_prediction(tracepath, candidates, num_digits):
+	space_beginning_frames = find_space_frames(tracepath.path, num_digits - 1)
+	print("Space beginning frames are: {}".format(space_beginning_frames))
+
+	classified_sequence = []
+	# First digit we get for free
+	for i in range(num_digits):
+		if i == 0:
+			# First digit from start to the first space, guaranteed
+			possible_space_intervals = [(0, 0)]
+			end_frame = space_beginning_frames[i]
+		elif i == num_digits - 1:
+			# Last digit from space to end of tracepath
+			possible_space_intervals = generate_intervals(space_beginning_frames[i - 1], (200, 600), len(tracepath.path), tracepath.fps())
+			end_frame = len(tracepath.path)
+		else:
+			# Guess that the space is about 25 frames, and beginning of digit starts after
+			possible_space_intervals = generate_intervals(space_beginning_frames[i - 1], (200, 600), len(tracepath.path), tracepath.fps())
+			end_frame = space_beginning_frames[i]
+
+		results = []
+		for interval in possible_space_intervals:
+			start_frame = interval[1]
+
+			path_slice = TracePath(path=tracepath.path[start_frame:end_frame + 1])
+			path_slice.normalize()
+			preds = classifyDTW(candidates, path_slice, include_space=False)[:3]
+			for class_name, distance in preds:
+				results.append((distance, class_name))
+
+		results = sorted(results)
+		initial_len = len(results)
+		unique_classes = set()
+		while len(unique_classes) < 3 and len(unique_classes) < initial_len:
+			unique_classes.add(results[0][1])
+			results = results[1:]
+		classified_sequence.append(list(unique_classes))
+
+	return classified_sequence
+
+
 def get_class_time_ranges(data, z_index=2.5):
 	ranges = {}
 	for class_name in data:
@@ -166,7 +249,7 @@ def classifyDTW(candidates, path, time_penalty_factor=1250, include_space=False)
 			penalty = abs(candidate_range[0] - path_length) / time_penalty_factor
 		elif path_length > candidate_range[1]:
 			penalty = abs(candidate_range[1] - path_length) / time_penalty_factor
-		minDist += penalty
+		#minDist += penalty
 
 		results[name] = minDist
 
