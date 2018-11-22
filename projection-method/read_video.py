@@ -4,7 +4,7 @@ import cv2
 import imutils
 
 from fileutils import read_obj, write_obj
-from motiontrack import Tracker
+from motion_track import Tracker
 from tracepoint import TracePath, TracePoint
 
 def tracepoint_from_frame(frame, tracker, frame_index, fps, viewport=None):
