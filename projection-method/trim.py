@@ -167,8 +167,8 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
                 checkpoint_indices = set()
 
                 print("[{0} - ?] Starting at frame {0}".format(start_index))
-                print("Skipping ahead 10 frames...")
-                frame_index += 10
+                print("Skipping ahead 5 frames...")
+                frame_index += 5
                 continue
 
             elif key == ord("e"):
@@ -186,8 +186,8 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
                     print("[{} - ?] Marking checkpoint #{} at frame {} (+{})".format(
                         start_index, len(checkpoint_indices), frame_index, frame_index - start_index
                     ))
-                    print("Skipping ahead 10 frames...")
-                    frame_index += 10
+                    print("Skipping ahead 5 frames...")
+                    frame_index += 5
 
                 continue
 
@@ -229,7 +229,7 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
         num_digits = int(len(checkpoint_indices) / 2) if len(checkpoint_indices) > 0 else 1
         concat_class_name = ""
         class_names = []
-        while True:
+        for i in range(3):
             concat_class_name = easygui.enterbox("Please specify {} digits formatted like 'zero_one_two' etc.".format(num_digits))
             class_names = concat_class_name.split('_')
 
@@ -263,14 +263,14 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
             .format(start_index, frame_index, frame_index + 1 - start_index)
         )
 
-        segment_save_thread = spawn_segment_save_thread(
-            video,
-            segment_save_path,
-            start_index,
-            frame_index,
-        )
-        segment_save_thread.start()
-        threads.append(segment_save_thread)
+        #segment_save_thread = spawn_segment_save_thread(
+        #    video,
+        #    segment_save_path,
+        #    start_index,
+        #    frame_index,
+        #)
+        #segment_save_thread.start()
+        #threads.append(segment_save_thread)
 
         if no_trace:
             continue

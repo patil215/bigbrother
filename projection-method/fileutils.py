@@ -84,6 +84,6 @@ def get_next_file_number(root_dir):
     make_dir(root_dir)
     base_file_nums = sorted([int(f.name.split('.')[0]) for f in os.scandir(root_dir) if f.is_file()])
     if len(base_file_nums) == 0:
-        return 1
+        return 1 
 
     return base_file_nums[-1] + 1
