@@ -61,6 +61,8 @@ def new_prediction(tracepath, candidates, num_digits):
 		results = []
 		for interval in possible_space_intervals:
 			start_frame = interval[1]
+			if start_frame >= end_frame:
+				continue
 
 			path_slice = TracePath(path=tracepath.path[start_frame:end_frame + 1])
 			path_slice.normalize()

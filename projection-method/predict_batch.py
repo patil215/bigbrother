@@ -69,6 +69,13 @@ def update_statistics(statistics, classifications, video_class):
 		statistics[video_class]["correct_top5"] += 1
 	statistics[video_class]["total"] += 1
 
+def update_statistics_batch(statistics, classifications, video_class):
+	classes = video_class.split("_")
+	for preds, actual in zip(classifications, classes):
+		if actual in preds:
+			statistics["correct"] += 1
+		statistics["total"] += 1
+
 
 def print_statistics(statistics):
 	print("SUMMARY OF RESULTS:")
@@ -114,17 +121,18 @@ def print_statistics(statistics):
 
 	plt.show()
 
-def do_prediction(training_data, path, sequence_length, statistics, video_class):
-	if sequence_length == 1:
-		classifications = classifyDTW(training_data, path)
-		update_statistics(statistics, classifications, video_class)
-	else:
-		print(video_class)
-		#print(sorted(list(path.checkpoint_indices)))
-		print(new_prediction(path, training_data, sequence_length))
-		print()
-		print()
-		#bfs_segment(path, training_data, sequence_length)
+
+def do_prediction(training_data, path, statistics, video_class):
+	classifications = classifyDTW(training_data, path)
+	update_statistics(statistics, classifications, video_class)
+
+
+def do_prediction_batch(training_data, path, sequence_length, statistics, video_class):
+	print(video_class)
+	prediction = new_prediction(path, training_data, sequence_length)
+	print(prediction)
+	print()
+	update_statistics_batch(statistics, prediction, video_class)
 
 
 @click.command()
@@ -147,7 +155,10 @@ def predict(test_dir, data, angle, length):
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
 	prep_data(training_data, transform)
 
-	statistics = defaultdict(lambda: defaultdict(int))
+	if length == 1:
+		statistics = defaultdict(lambda: defaultdict(int))
+	else:
+		statistics = defaultdict(int)
 
 	# Classify test paths.
 	print("Classifying test paths...")
@@ -159,10 +170,15 @@ def predict(test_dir, data, angle, length):
 			path.normalize()
 
 			#predict_space_frames(video_class, inverse_path, length)
-			get_class_time_ranges(training_data)
-			do_prediction(training_data, path, length, statistics, video_class)
+			if length == 1:
+				do_prediction(training_data, path, statistics, video_class)
+			else:
+				do_prediction_batch(training_data, path, length, statistics, video_class)
 
-	print_statistics(statistics)
+	if length == 1:
+		print_statistics(statistics)
+	else:
+		print(statistics)
 
 
 if __name__ == "__main__":
