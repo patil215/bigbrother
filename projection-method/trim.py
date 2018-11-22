@@ -226,7 +226,7 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
             print("WARNING: odd number of checkpoints ({}). Assuming end frame is final checkpoint...".format(num_checkpoints))
             checkpoint_indices.add(frame_index)
 
-        num_digits = len(checkpoint_indices) / 2 if len(checkpoint_indices) > 0 else 1
+        num_digits = int(len(checkpoint_indices) / 2) if len(checkpoint_indices) > 0 else 1
         concat_class_name = ""
         class_names = []
         while True:
@@ -243,7 +243,7 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
 
         # Generate new file destinations.
         # The file number is the `max` of all the next file numbers in possible destinations, for consistency.
-        digit_qty_folder = "{}{}_digits/".format(DEST_BASE_DIR, len(class_names))
+        digit_qty_folder = "{}/{}_digits/".format(DEST_BASE_DIR, len(class_names))
         segment_save_folder = digit_qty_folder + concat_class_name
         path_save_folder = digit_qty_folder + concat_class_name
         vertical_path_save_folder = digit_qty_folder + concat_class_name
