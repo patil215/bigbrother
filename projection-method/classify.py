@@ -6,6 +6,7 @@ from tracepoint import TracePath
 import math
 import matplotlib.pyplot as plt
 from numpy import std
+import numpy as np
 
 def find_greatest_speed_index(path, valid_frames):
 	greatest_speed = 0
@@ -19,26 +20,26 @@ def find_greatest_speed_index(path, valid_frames):
 	return greatest_speed_index
 
 
-def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=250, SPACE_FRAME_OFFSET=3):
+def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=250, SPACE_MILLIS_OFFSET=50):
 	path = tracepath.path
 	millis_per_frame = 1000 / tracepath.fps()
-	buffer_frames = 250 / millis_per_frame
+	buffer_frames = int(250 / millis_per_frame)
 
 	space_frames = []
 	valid_frames = set([i for i in range(len(path))])
 	while len(space_frames) < num_spaces:
 		greatest_speed_index = find_greatest_speed_index(path, valid_frames)
-		space_frames.append(greatest_speed_index - SPACE_FRAME_OFFSET)
+		space_frames.append(max(0, greatest_speed_index - int(SPACE_MILLIS_OFFSET / millis_per_frame)))
 
 		# Take out all frames in a buffer around this frame
-		valid_indices = valid_indices.difference(
+		valid_frames = valid_frames.difference(
 			set(range(greatest_speed_index - buffer_frames, greatest_speed_index + buffer_frames))
 		)
 	return sorted(space_frames)
 
 
 def new_prediction(tracepath, candidates, num_digits):
-	space_beginning_frames = find_space_frames(tracepath.path, num_digits - 1)
+	space_beginning_frames = find_space_frames(tracepath, num_digits - 1)
 	print("Space beginning frames are: {}".format(space_beginning_frames))
 
 	classified_sequence = []

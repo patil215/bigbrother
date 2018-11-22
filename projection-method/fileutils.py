@@ -44,6 +44,19 @@ def write_video_frames(video_source, startIndex, endIndex, filename):
     write_obj(filename, videoFrames)
     print("[{0} - {1}] {2} frame segment saved successfully to {3}".format(startIndex, endIndex, len(videoFrames), filename))
 
+def get_paths(path_dir):
+    paths = []
+    file_tree = get_file_tree(path_dir)
+    for subfolder in file_tree:
+        other_paths = get_file_tree(path_dir + '/' + subfolder)
+        for thing in other_paths:
+            set_things = other_paths[thing]
+            for item in set_things:
+                if ".path" in item:
+                    string = path_dir + '/' + subfolder + '/' + thing + '/' + item
+                    paths.append(string)
+    return paths
+
 def read_training_data(data_dir):
     file_tree = get_file_tree(data_dir)
     for subfolder in file_tree:
