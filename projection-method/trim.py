@@ -244,16 +244,18 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
         # Generate new file destinations.
         # The file number is the `max` of all the next file numbers in possible destinations, for consistency.
         digit_qty_folder = "{}/{}_digits/".format(DEST_BASE_DIR, len(class_names))
-        segment_save_folder = digit_qty_folder + concat_class_name
-        path_save_folder = digit_qty_folder + concat_class_name
-        vertical_path_save_folder = digit_qty_folder + concat_class_name
+        class_save_folder = digit_qty_folder + concat_class_name
+        segment_save_folder = "{}/segments".format(class_save_folder)
+        path_save_folder = "{}/paths".format(class_save_folder)
+        vertical_path_save_folder = "{}/paths_vertical".format(class_save_folder)
+
         file_number = max(get_next_file_number(segment_save_folder),
             get_next_file_number(path_save_folder),
             get_next_file_number(vertical_path_save_folder))
 
-        segment_save_path = "{}/segments/{}.segment".format(segment_save_folder, file_number)
-        path_save_path = "{}/paths/{}.path".format(path_save_folder, file_number)
-        vertical_path_save_path = "{}/paths_vertical/{}.vpath".format(path_save_folder, file_number)
+        segment_save_path = "{}/{}.segment".format(segment_save_folder, file_number)
+        path_save_path = "{}/{}.path".format(path_save_folder, file_number)
+        vertical_path_save_path = "{}/{}.vpath".format(path_save_folder, file_number)
 
         # Save the segment from video
         print(
