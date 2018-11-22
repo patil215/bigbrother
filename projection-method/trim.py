@@ -11,8 +11,8 @@ import easygui
 import imutils
 
 from fileutils import read_video_frames, read_obj, write_video_frames, write_obj
-from motiontrack import Tracker
-from readvideo import save_tracepath_from_raw_video, tracepath_from_frames
+from motion_track import Tracker
+from read_video import save_tracepath_from_raw_video, tracepath_from_frames
 from tracepoint import TracePath, TracePoint
 from vizutils import draw_tracepoints, request_bounding_box, generate_random_bounding_boxes
 

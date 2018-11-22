@@ -75,7 +75,6 @@ def align(video_horizontal, video_vertical, video_horizontal_dest, video_vertica
         elif key == ord(";"):
             ind_b += 20
         elif key == ord("q"):
-            # Save the properly aligned segments
             break
 
 if __name__ == '__main__':
