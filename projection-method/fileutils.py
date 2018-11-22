@@ -3,6 +3,14 @@ import os
 from collections import defaultdict
 import cv2
 
+def make_dir(path):
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError as exc: # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
 def read_obj(path):
     if not os.path.exists(path):
         return None
@@ -12,12 +20,7 @@ def write_obj(path, object):
     if path.rfind(".") == -1:
         print("Warning: saving file without an extension: {}".format(path))
 
-    if not os.path.exists(os.path.dirname(path)):
-        try:
-            os.makedirs(os.path.dirname(path))
-        except OSError as exc: # Guard against race condition
-            if exc.errno != errno.EEXIST:
-                raise
+    make_dir(os.path.dirname(path))
 
     with open(path, 'wb') as output:
         pickle.dump(object, output, pickle.HIGHEST_PROTOCOL)
@@ -72,3 +75,12 @@ def get_test_path_tree(root_dir):
     for folder in tree:
         tree[folder] = list(filter(lambda filename: filename[-5:] == ".path", tree[folder]))
     return tree
+
+def get_next_file_number(root_dir):
+    """
+    Reads a directory of files with integer filenames and returns the next available file name
+    (largest filename + 1), extension not included. Creates the directory if it does not exist.
+    """
+    make_dir(root_dir)
+    base_file_nums = sorted([int(f.name.split('.')[0]) for f in os.scandir(root_dir) if f.is_file()])
+    return base_file_nums[-1] + 1

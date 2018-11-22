@@ -32,7 +32,7 @@ def tracepath_from_frames(video_segment, fps, viewport=None, height=700, tracker
 
 	return tracepath
 
-def save_tracepath_from_raw_video(source, dest_path, start_index, end_index, tracker, viewport, fps, checkpoints):
+def save_tracepath_from_raw_video(source, dest_root_folder, start_index, end_index, tracker, viewport, fps, checkpoints, classes):
 	print("[{0} - {1}] Beginning tracking...".format(start_index, end_index))
 	tracepath = TracePath()
 	for i in range(end_index - start_index + 1):
