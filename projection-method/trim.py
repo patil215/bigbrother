@@ -251,9 +251,9 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
             get_next_file_number(path_save_folder),
             get_next_file_number(vertical_path_save_folder))
 
-        segment_save_path = "{}/{}.segment".format(segment_save_folder, file_number)
-        path_save_path = "{}/{}.path".format(path_save_folder, file_number)
-        vertical_path_save_path = "{}/{}.vpath".format(path_save_folder, file_number)
+        segment_save_path = "{}/segments/{}.segment".format(segment_save_folder, file_number)
+        path_save_path = "{}/paths/{}.path".format(path_save_folder, file_number)
+        vertical_path_save_path = "{}/paths_vertical/{}.vpath".format(path_save_folder, file_number)
 
         # Save the segment from video
         print(
