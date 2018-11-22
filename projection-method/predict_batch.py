@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from tabulate import tabulate
 
-from classify import bfs_segment, classifyDTW, get_class_time_ranges, prep_data, predict_space_frames, new_prediction
+from classify import bfs_segment, classifyDTW, get_class_time_ranges, prep_data, new_prediction
 from fileutils import (get_test_path_tree, get_test_segment_tree, read_obj,
                        read_training_data, write_obj)
 from project import eulerAnglesToRotationMatrix
@@ -159,6 +159,7 @@ def predict(test_dir, data, angle, length):
 			path.normalize()
 
 			#predict_space_frames(video_class, inverse_path, length)
+			get_class_time_ranges(training_data)
 			do_prediction(training_data, path, length, statistics, video_class)
 
 	print_statistics(statistics)

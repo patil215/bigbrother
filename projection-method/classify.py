@@ -7,47 +7,35 @@ import math
 import matplotlib.pyplot as plt
 from numpy import std
 
-def predict_space_frames(video_class, path, sequence_length):
-	space_frames = find_space_frames(path.path, sequence_length - 1)
-	print(space_frames)
-
-def find_greatest_speed_index(path, valid_indices):
+def find_greatest_speed_index(path, valid_frames):
 	greatest_speed = 0
 	greatest_speed_index = 0
 	for i in range(len(path) - 1):
-		velocity_x = path[i + 1].pos[0] - path[i].pos[0]
-		velocity_y = path[i + 1].pos[1] - path[i].pos[1]
-		speed = math.sqrt(velocity_x**2 + velocity_y**2)
-		if speed > greatest_speed and i in valid_indices:
+		speed = euclidean(path[i].pos, path[i + 1].pos)
+		if speed > greatest_speed and i in valid_frames:
 			greatest_speed = speed
 			greatest_speed_index = i
 
 	return greatest_speed_index
 
-def find_lowest_speed_indices(path, range_inds):
-	speeds = [] # Tuple of (speed, index)
-	for i in range(range_inds[0], range_inds[1]):
-		velocity_x = path[i + 1].pos[0] - path[i].pos[0]
-		velocity_y = path[i + 1].pos[1] - path[i].pos[1]
-		speed = math.sqrt(velocity_x**2 + velocity_y**2)
-		speeds.append((speed, i))
-	return [p[1] for p in sorted(speeds)[:2]]
 
+def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=250, SPACE_FRAME_OFFSET=3):
+	path = tracepath.path
+	millis_per_frame = 1000 / tracepath.fps()
+	buffer_frames = 250 / millis_per_frame
 
-def find_space_frames(path, num_to_find):
 	space_frames = []
-	valid_indices = set([i for i in range(len(path))])
-	while len(space_frames) < num_to_find:
-		greatest_speed_index = find_greatest_speed_index(path, valid_indices)
-		for i in range(greatest_speed_index - 15, greatest_speed_index + 15): # TODO don't hardcode frames
-			if i in valid_indices:
-				valid_indices.remove(i)
+	valid_frames = set([i for i in range(len(path))])
+	while len(space_frames) < num_spaces:
+		greatest_speed_index = find_greatest_speed_index(path, valid_frames)
+		space_frames.append(greatest_speed_index - SPACE_FRAME_OFFSET)
 
-		start_low_range = greatest_speed_index + 15
-		end_low_range = min(len(path), greatest_speed_index + 25)
-		#space_frames.append((greatest_speed_index - 3, find_lowest_speed_indices(path, (start_low_range, end_low_range))))
-		space_frames.append(greatest_speed_index - 3)
+		# Take out all frames in a buffer around this frame
+		valid_indices = valid_indices.difference(
+			set(range(greatest_speed_index - buffer_frames, greatest_speed_index + buffer_frames))
+		)
 	return sorted(space_frames)
+
 
 def new_prediction(tracepath, candidates, num_digits):
 	space_beginning_frames = find_space_frames(tracepath.path, num_digits - 1)
@@ -75,7 +63,7 @@ def new_prediction(tracepath, candidates, num_digits):
 
 			path_slice = TracePath(path=tracepath.path[start_frame:end_frame + 1])
 			path_slice.normalize()
-			preds = classifyDTW(candidates, path_slice, include_space=False)[:3]
+			preds = classifyDTW(candidates, path_slice)[:3]
 			for class_name, distance in preds:
 				results.append((distance, class_name))
 
@@ -93,28 +81,22 @@ def new_prediction(tracepath, candidates, num_digits):
 def get_class_time_ranges(data, z_index=2.5):
 	ranges = {}
 	for class_name in data:
-		start_millis = min([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
-		end_millis = max([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
-		average = (start_millis + end_millis) / 2
-		stdev = std([tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]])
-		range_start = max(0, start_millis - (stdev * z_index))
-		range_end = end_millis + (stdev * z_index)
+		lengths = [tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]]
+		min_length, max_length, stddev = (min(lengths), max(lengths), std(lengths))
+		average_length = np.mean(np.array(lengths))
+		range_start = max(0, average_length - (stddev * z_index))
+		range_end = average_length + (stddev * z_index)
 		ranges[class_name] = (range_start, range_end)
 	return ranges
 
-def generate_intervals(
-		start_frame_index,
-		time_range,
-		path_length,
-		fps
-	):
-	MILLIS_PER_FRAME = 1000.0 / fps
-	intervals = []
 
+def generate_intervals(start_frame_index, time_range, path_length, fps):
+	MILLIS_PER_FRAME = 1000.0 / fps
 	interval_start_frame = start_frame_index + int(time_range[0] / MILLIS_PER_FRAME)
 	interval_end_frame = start_frame_index + int(time_range[1] / MILLIS_PER_FRAME)
 	frames_per_step = 1
 
+	intervals = []
 	for end_frame_index in range(interval_start_frame, interval_end_frame, frames_per_step):
 		if end_frame_index - start_frame_index == 0:
 			continue
@@ -124,6 +106,7 @@ def generate_intervals(
 
 	return intervals
 
+
 def print_classifications(classification_lists):
 	print("Candidates:")
 	for classification_list in classification_lists:
@@ -132,6 +115,7 @@ def print_classifications(classification_lists):
 		times = [str((x[2], x[3])) for x in classification_list[1:]]
 		print("{}: Times: {} (Score: {})".format("->".join(classes), ",".join(times), total_score))
 	print()
+
 
 def plot_interval_vs_score(candidates, class_name, intervals, tracepath):
 	data = []
@@ -148,6 +132,7 @@ def plot_interval_vs_score(candidates, class_name, intervals, tracepath):
 	plt.xlabel("Interval length (frames)")
 	plt.title("Score for class {}".format(class_name))
 	plt.show()
+
 
 def bfs_segment(tracepath, candidates, num_digits, K=5, allow_growth=True):
 	# Format: List[(total_score, class_name, frame_start, frame_end)]
@@ -206,11 +191,13 @@ def bfs_segment(tracepath, candidates, num_digits, K=5, allow_growth=True):
 
 	return current_classifications
 
+
 def prep_data(data, R):
 	for category in data:
 		for tracepath in data[category]:
 			tracepath.transform(R)
 			tracepath.normalize()
+
 
 def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	dist_x, cost_x, acc_x, path_x = dtw(x_actual, x_test, dist=lambda x, y: abs(x - y))
@@ -219,13 +206,11 @@ def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	distance = math.sqrt(dist_x ** 2 + dist_y ** 2)
 	return distance
 
-def printScores(sorted_distances):
-	for item in sorted_distances:
-		print(item[0] + ": " + str(item[1]))
 
-def classifyDTW(candidates, path, time_penalty_factor=1250, include_space=False):
-	"""Uses Dynamic Time Warping to classify a path as one of the candidates.
-	Candidates: dict from class name to list of normalized TracePaths, ex) {"zero": [pathName]}
+def classifyDTW(candidates, path, penalize_time_difference=True, time_penalty_factor=1250, include_space=False):
+	"""
+	Uses Dynamic Time Warping to classify a path as one of the candidates.
+	candidates: dict from class name to list of normalized TracePaths, ex) {"zero": [pathName]}
 	path: normalized TracePath, what we're trying to classify.
 	Higher time penalty factor means penalizing less.
 	"""
@@ -240,18 +225,17 @@ def classifyDTW(candidates, path, time_penalty_factor=1250, include_space=False)
 
 	results = {}
 	for name in candidates.keys():
-		minDist = min([computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
-			for candidate in candidates[name]])
+		min_dist = min(
+			[computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
+			for candidate in candidates[name]]
+		)
 
-		candidate_range = time_ranges[name]
-		penalty = 0
-		if path_length < candidate_range[0]:
-			penalty = abs(candidate_range[0] - path_length) / time_penalty_factor
-		elif path_length > candidate_range[1]:
-			penalty = abs(candidate_range[1] - path_length) / time_penalty_factor
-		#minDist += penalty
+		time_range = time_ranges[name]
+		penalty = max(
+			max(time_range[0], path_length) - path_length,
+			path_length - min(time_range[1], path_length)
+		) / time_penalty_factor
+		min_dist = min_dist + penalty if penalize_time_difference else min_dist
+		results[name] = min_dist
 
-		results[name] = minDist
-
-	sorted_distances = sorted(results.items(), key=operator.itemgetter(1))
-	return sorted_distances
+	return sorted(results.items(), key=operator.itemgetter(1))

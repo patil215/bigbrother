@@ -10,11 +10,14 @@ import cv2
 import easygui
 import imutils
 
-from fileutils import make_dir, read_video_frames, read_obj, write_video_frames, write_obj, get_next_file_number
-from motiontrack import Tracker
-from readvideo import save_tracepath_from_raw_video, tracepath_from_frames
+from fileutils import (get_next_file_number, make_dir, read_obj,
+                       read_video_frames, write_obj, write_video_frames)
+from motion_track import Tracker
+from read_video import save_tracepath_from_raw_video, tracepath_from_frames
 from tracepoint import TracePath, TracePoint
-from vizutils import draw_tracepoints, request_bounding_box, generate_random_bounding_boxes
+from vizutils import (draw_tracepoints, generate_random_bounding_boxes,
+                      request_bounding_box)
+
 
 def spawn_segment_save_thread(video_file, dest_full_path, start_index, end_index, concat_class_name):
     return threading.Thread(
