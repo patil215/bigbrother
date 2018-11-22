@@ -19,7 +19,7 @@ from vizutils import (draw_tracepoints, generate_random_bounding_boxes,
                       request_bounding_box)
 
 
-def spawn_segment_save_thread(video_file, dest_full_path, start_index, end_index, concat_class_name):
+def spawn_segment_save_thread(video_file, dest_full_path, start_index, end_index):
     return threading.Thread(
         target=write_video_frames,
         args=(video_file, start_index, end_index, dest_full_path)
@@ -268,7 +268,6 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
             segment_save_path,
             start_index,
             frame_index,
-            concat_class_name
         )
         segment_save_thread.start()
         threads.append(segment_save_thread)
