@@ -134,6 +134,9 @@ def display_tracepoints(filename, angle, size):
 		print("The specified file does not exist.")
 		sys.exit(1)
 
+	print("tracepoint length: {}".format(len(tracepath.path)))
+	print("checkpoints: {}".format(sorted(list(tracepath.checkpoint_indices))))
+	print("timestamps: {}".format([point.t for point in tracepath.path]))
 	draw_tracepoints(tracepath, size=size, title="{0}".format(filename))
 
 	if not angle == (0, 0, 0):																																								

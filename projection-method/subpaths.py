@@ -59,8 +59,9 @@ def generate_subpaths(longpath, padding):
 
             # extract subpath and realign timestamps
             subpath = copy.deepcopy(path.path[left_frame_index:right_frame_index + 1])
+            initial_timestamp = subpath[0].t
             for point in subpath:
-                point.t = point.t - subpath[0].t
+                point.t = point.t - initial_timestamp
 
             new_tracepath = TracePath(subpath, set(adjusted_checkpoints))
             write_obj(output_file_name, new_tracepath)
