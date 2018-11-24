@@ -1,13 +1,16 @@
-from scipy.spatial.distance import euclidean
-from dtw import dtw
-from numpy.linalg import norm
-import operator
-from tracepoint import TracePath
 import math
+import operator
+
 import matplotlib.pyplot as plt
-from numpy import std
 import numpy as np
-#from collections import Counter
+from dtw import dtw
+from numpy import std
+from numpy.linalg import norm
+from scipy.spatial.distance import euclidean
+
+from tracepoint import TracePath
+from twed import DTWEDL1d
+
 
 def find_greatest_speed_index(path, valid_frames):
 	greatest_speed = 0
@@ -202,7 +205,7 @@ def prep_data(data, R):
 		for tracepath in data[category]:
 			tracepath.transform(R)
 			tracepath.normalize()
-			#tracepath.interpolate(50)
+			tracepath.interpolate(50)
 
 
 def computeDTWDistance(x_actual, y_actual, x_test, y_test):
@@ -212,6 +215,14 @@ def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	distance = math.sqrt(dist_x ** 2 + dist_y ** 2)
 	return distance
 
+def computeTWEDDistance(actual_path, test_path):
+	actual_points = list(zip(actual_path.sequence(0), actual_path.sequence(1)))
+	actual_timestamps = [point.t for point in actual_path.path]
+	
+	test_points = list(zip(test_path.sequence(0), test_path.sequence(1)))
+	test_timestamps = [point.t for point in test_path.path]
+
+	return DTWEDL1d(2, actual_points, actual_timestamps, test_points, test_timestamps, 0.001, 0.5, 2)
 
 def classifyDTW(candidates, path, penalize_time_difference=True, time_penalty_factor=1250, include_space=False):
 	"""
@@ -232,7 +243,7 @@ def classifyDTW(candidates, path, penalize_time_difference=True, time_penalty_fa
 	results = {}
 	for name in candidates.keys():
 		min_dist = min(
-			[computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
+			[computeTWEDDistance(path, candidate)
 			for candidate in candidates[name]]
 		)
 

@@ -205,7 +205,7 @@ def predict(test_dir, data, angle, frame, length):
 			path = read_obj(
 				"{}/{}/{}".format(test_dir, video_class, path_name))
 			path.normalize()
-			#path.interpolate(50)
+			path.interpolate(50)
 
 			#predict_space_frames(video_class, inverse_path, length)
 			if length == 1:
