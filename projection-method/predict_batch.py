@@ -4,6 +4,7 @@ import os
 import time
 from collections import defaultdict
 from time import sleep
+import sys
 
 import click
 import cv2
@@ -16,7 +17,7 @@ from tabulate import tabulate
 from classify import bfs_segment, classifyDTW, get_class_time_ranges, prep_data, new_prediction
 from fileutils import (get_test_path_tree, get_test_segment_tree, read_obj,
                        read_training_data, write_obj)
-from project import eulerAnglesToRotationMatrix
+from project import eulerAnglesToRotationMatrix, estimate_paper_rotation
 from tracepoint import TracePath, TracePoint
 from vizutils import draw_tracepoints, plotPath
 
@@ -138,9 +139,10 @@ def do_prediction_batch(training_data, path, sequence_length, statistics, video_
 @click.command()
 @click.argument('test_dir')
 @click.option('-d', '--data', help="Location of the data directory", default="data")
-@click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=(0, 0, 0))
+@click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=None)
+@click.option('-f', '--frame', help="Representative frame used for estimating angle", default=None)
 @click.option('-l', '--length', help="Digit sequence length", default=1)
-def predict(test_dir, data, angle, length):
+def predict(test_dir, data, angle, frame, length):
 	if not os.path.exists(test_dir):
 		print("Invalid test directory provided!")
 		return
@@ -150,6 +152,16 @@ def predict(test_dir, data, angle, length):
 
 	path_tree = get_test_path_tree(test_dir)
 	training_data = read_training_data(data)
+
+	if angle:
+		print("Using provided angle")
+	elif frame:
+		# Automatically estimate angle
+		angle = estimate_paper_rotation(frame)
+		print("Autodetecting angles: got {}".format(angle))
+	else:
+		print("Either supply an angle or a frame")
+		sys.exit(1)
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))

@@ -7,6 +7,7 @@ import math
 import matplotlib.pyplot as plt
 from numpy import std
 import numpy as np
+#from collections import Counter
 
 def find_greatest_speed_index(path, valid_frames):
 	greatest_speed = 0
@@ -38,7 +39,7 @@ def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=250, SPACE_MILL
 	return sorted(space_frames)
 
 
-def new_prediction(tracepath, candidates, num_digits):
+def new_prediction(tracepath, candidates, num_digits, num_to_keep=3):
 	space_beginning_frames = find_space_frames(tracepath, num_digits - 1)
 	print("Space beginning frames are: {}".format(space_beginning_frames))
 
@@ -66,14 +67,14 @@ def new_prediction(tracepath, candidates, num_digits):
 
 			path_slice = TracePath(path=tracepath.path[start_frame:end_frame + 1])
 			path_slice.normalize()
-			preds = classifyDTW(candidates, path_slice)[:3]
+			preds = classifyDTW(candidates, path_slice)[:num_to_keep]
 			for class_name, distance in preds:
 				results.append((distance, class_name))
 
 		results = sorted(results)
 		initial_len = len(results)
 		unique_classes = set()
-		while len(unique_classes) < 3 and len(unique_classes) < initial_len:
+		while len(unique_classes) < num_to_keep and len(unique_classes) < initial_len:
 			unique_classes.add(results[0][1])
 			results = results[1:]
 		classified_sequence.append(list(unique_classes))
@@ -210,7 +211,7 @@ def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	return distance
 
 
-def classifyDTW(candidates, path, penalize_time_difference=True, time_penalty_factor=1250, include_space=False):
+def classifyDTW(candidates, path, penalize_time_difference=False, time_penalty_factor=1250, include_space=False):
 	"""
 	Uses Dynamic Time Warping to classify a path as one of the candidates.
 	candidates: dict from class name to list of normalized TracePaths, ex) {"zero": [pathName]}
@@ -242,3 +243,14 @@ def classifyDTW(candidates, path, penalize_time_difference=True, time_penalty_fa
 		results[name] = min_dist
 
 	return sorted(results.items(), key=operator.itemgetter(1))
+
+	"""results = []
+	for name in candidates.keys():
+		for candidate in candidates[name]:
+			dist = computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
+			results.append((dist, name))
+
+	results = sorted(results)
+	print(results[:5])
+	mode = Counter(r[1] for r in results[:5]).most_common(1)[0][0]
+	return [(mode, results[0][0])]"""
