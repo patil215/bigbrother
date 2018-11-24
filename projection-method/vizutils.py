@@ -88,16 +88,18 @@ def draw_tracepoints(tracepath, size=512, color=(255, 255, 255), title="Tracepat
 	plt.scatter([p for p in tracepath.checkpoint_indices], [velocities_y[p][1] for p in tracepath.checkpoint_indices], s=80, facecolors='none', edgecolors='r')"""
 	plt.plot([p[0] for p in speeds], [p[1] for p in speeds], color="green")
 
-	sorted_checkpoints = sorted(list(tracepath.checkpoint_indices))
-	if sorted_checkpoints[-1] >= len(speeds):
-		sorted_checkpoints = sorted_checkpoints[:-1]
+	if hasattr(tracepath, 'checkpoint_indices'):
+		sorted_checkpoints = sorted(list(tracepath.checkpoint_indices))
+		if sorted_checkpoints[-1] >= len(speeds):
+			sorted_checkpoints = sorted_checkpoints[:-1]
 
-	plt.scatter([p for p in sorted_checkpoints], [speeds[p][1] for p in sorted_checkpoints], s=80, facecolors='none', edgecolors='r')
+		plt.scatter([p for p in sorted_checkpoints], [speeds[p][1] for p in sorted_checkpoints], s=80, facecolors='none', edgecolors='r')
+
 	plt.xlabel(title)
 	plt.show()
 
 	cv2.imshow(title, frame)
-	# cv2.waitKey(0)
+	cv2.waitKey(0)
 
 def plotPath(path, coordinate, color):
     pts = path.time_sequence(coordinate)

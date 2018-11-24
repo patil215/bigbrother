@@ -39,7 +39,7 @@ def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=250, SPACE_MILL
 	return sorted(space_frames)
 
 
-def new_prediction(tracepath, candidates, num_digits, num_to_keep=3):
+def new_prediction(tracepath, candidates, num_digits, num_to_keep=10):
 	space_beginning_frames = find_space_frames(tracepath, num_digits - 1)
 	print("Space beginning frames are: {}".format(space_beginning_frames))
 
@@ -73,16 +73,17 @@ def new_prediction(tracepath, candidates, num_digits, num_to_keep=3):
 
 		results = sorted(results)
 		initial_len = len(results)
-		unique_classes = set()
+		unique_classes = []
 		while len(unique_classes) < num_to_keep and len(unique_classes) < initial_len:
-			unique_classes.add(results[0][1])
+			if results[0][1] not in unique_classes:
+				unique_classes.append(results[0][1])
 			results = results[1:]
 		classified_sequence.append(list(unique_classes))
 
 	return classified_sequence
 
 
-def get_class_time_ranges(data, z_index=2.5):
+def get_class_time_ranges(data, z_index=3):
 	ranges = {}
 	for class_name in data:
 		lengths = [tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]]
@@ -201,6 +202,7 @@ def prep_data(data, R):
 		for tracepath in data[category]:
 			tracepath.transform(R)
 			tracepath.normalize()
+			#tracepath.interpolate(50)
 
 
 def computeDTWDistance(x_actual, y_actual, x_test, y_test):
@@ -211,7 +213,7 @@ def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	return distance
 
 
-def classifyDTW(candidates, path, penalize_time_difference=False, time_penalty_factor=1250, include_space=False):
+def classifyDTW(candidates, path, penalize_time_difference=True, time_penalty_factor=1250, include_space=False):
 	"""
 	Uses Dynamic Time Warping to classify a path as one of the candidates.
 	candidates: dict from class name to list of normalized TracePaths, ex) {"zero": [pathName]}

@@ -70,12 +70,37 @@ def update_statistics(statistics, classifications, video_class):
 		statistics[video_class]["correct_top5"] += 1
 	statistics[video_class]["total"] += 1
 
+def print_distr(statistics):
+	keys = sorted(statistics.keys())
+	print(
+		tabulate(
+			[[statistics[k] for k in keys]],
+			headers=keys
+		)
+	)
+
+def plot_distr(statistics, length):
+	plt.plot(range(1, 11), [statistics["correct_" + str(i)] / statistics["total"] for i in range(1, 11)])
+	plt.plot(range(1, 11), [(i / 10)**length for i in range(1, 11)])
+	plt.show()
+
 def update_statistics_batch(statistics, classifications, video_class):
 	classes = video_class.split("_")
-	for preds, actual in zip(classifications, classes):
-		if actual in preds:
-			statistics["correct"] += 1
-		statistics["total"] += 1
+
+	for i in range(1, 11):
+		if "correct_" + str(i) not in statistics:
+			statistics["correct_" + str(i)] = 0
+
+		correct = True
+		for preds, actual in zip(classifications, classes):
+			if actual not in preds[:i]:
+				correct = False
+				break
+
+		if correct:	
+			statistics["correct_" + str(i)] += 1
+	statistics["total"] += 1
+	print_distr(statistics)
 
 
 def print_statistics(statistics):
@@ -180,6 +205,7 @@ def predict(test_dir, data, angle, frame, length):
 			path = read_obj(
 				"{}/{}/{}".format(test_dir, video_class, path_name))
 			path.normalize()
+			#path.interpolate(50)
 
 			#predict_space_frames(video_class, inverse_path, length)
 			if length == 1:
@@ -190,6 +216,7 @@ def predict(test_dir, data, angle, frame, length):
 	if length == 1:
 		print_statistics(statistics)
 	else:
+		plot_distr(statistics, length)
 		print(statistics)
 
 

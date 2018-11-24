@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.interpolate import Rbf, InterpolatedUnivariateSpline
+from vizutils import draw_tracepoints
 
 class TracePoint:
     # t signifies milliseconds since start of path trace.
@@ -39,6 +41,28 @@ class TracePath:
     def transform(self, rotation_matrix):
         for point in self.path:
             point.transform(rotation_matrix)
+
+    # The other tracepath must be larger
+    def interpolate(self, num_points):
+        #draw_tracepoints(self)
+        ts = [p.t for p in self.path]
+        xs = self.sequence(0)
+        ys = self.sequence(1)
+        zs = self.sequence(2)
+        ius_x = InterpolatedUnivariateSpline(ts, xs)
+        ius_y = InterpolatedUnivariateSpline(ts, ys)
+        ius_z = InterpolatedUnivariateSpline(ts, zs)
+
+        new_ts = np.linspace(min(ts), max(ts), num_points)
+        new_xs = ius_x(new_ts)
+        new_ys = ius_y(new_ts)
+        new_zs = ius_z(new_ts)
+
+        new_path = []
+        for t, x, y, z in zip(new_ts, new_xs, new_ys, new_zs):
+            new_path.append(TracePoint((x, y, z), t))
+        self.path = new_path
+        #draw_tracepoints(self)
 
     def normalize_preserving_aspect(self, big_sequence, small_sequences, lower_bound, upper_bound):
         big_min, big_max = big_sequence.min(), big_sequence.max()
