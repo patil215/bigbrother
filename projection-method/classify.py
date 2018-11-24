@@ -65,10 +65,12 @@ def new_prediction(tracepath, candidates, num_digits, num_to_keep=10):
 		results = []
 		for interval in possible_space_intervals:
 			start_frame = interval[1]
-			if start_frame >= end_frame:
+			if start_frame >= end_frame - 3:
 				continue
 
 			path_slice = TracePath(path=tracepath.path[start_frame:end_frame + 1])
+			path_slice.reset_times()
+			path_slice.interpolate(25)
 			path_slice.normalize()
 			preds = classifyDTW(candidates, path_slice)[:num_to_keep]
 			for class_name, distance in preds:
@@ -205,7 +207,7 @@ def prep_data(data, R):
 		for tracepath in data[category]:
 			tracepath.transform(R)
 			tracepath.normalize()
-			tracepath.interpolate(50)
+			tracepath.interpolate(25)
 
 
 def computeDTWDistance(x_actual, y_actual, x_test, y_test):
@@ -215,16 +217,16 @@ def computeDTWDistance(x_actual, y_actual, x_test, y_test):
 	distance = math.sqrt(dist_x ** 2 + dist_y ** 2)
 	return distance
 
-def computeTWEDDistance(actual_path, test_path):
+def computeTWEDDistance(actual_path, test_path, stiffness=0.0003, delete_cost=0.95, degree=2):
 	actual_points = list(zip(actual_path.sequence(0), actual_path.sequence(1)))
 	actual_timestamps = [point.t for point in actual_path.path]
 	
 	test_points = list(zip(test_path.sequence(0), test_path.sequence(1)))
 	test_timestamps = [point.t for point in test_path.path]
 
-	return DTWEDL1d(2, actual_points, actual_timestamps, test_points, test_timestamps, 0.001, 0.5, 2)
+	return DTWEDL1d(2, actual_points, actual_timestamps, test_points, test_timestamps, stiffness, delete_cost, degree)
 
-def classifyDTW(candidates, path, penalize_time_difference=True, time_penalty_factor=1250, include_space=False):
+def classifyDTW(candidates, path, penalize_time_difference=False, time_penalty_factor=1250, include_space=False):
 	"""
 	Uses Dynamic Time Warping to classify a path as one of the candidates.
 	candidates: dict from class name to list of normalized TracePaths, ex) {"zero": [pathName]}

@@ -149,6 +149,7 @@ def print_statistics(statistics):
 
 
 def do_prediction(training_data, path, statistics, video_class):
+	path.interpolate(25)
 	classifications = classifyDTW(training_data, path)
 	update_statistics(statistics, classifications, video_class)
 
@@ -205,7 +206,6 @@ def predict(test_dir, data, angle, frame, length):
 			path = read_obj(
 				"{}/{}/{}".format(test_dir, video_class, path_name))
 			path.normalize()
-			path.interpolate(50)
 
 			#predict_space_frames(video_class, inverse_path, length)
 			if length == 1:

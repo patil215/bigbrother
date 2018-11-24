@@ -42,6 +42,11 @@ class TracePath:
         for point in self.path:
             point.transform(rotation_matrix)
 
+    def reset_times(self):
+        mintime = self.path[0].t
+        for tracepoint in self.path:
+            tracepoint.t = tracepoint.t - mintime
+
     # The other tracepath must be larger
     def interpolate(self, num_points):
         #draw_tracepoints(self)
