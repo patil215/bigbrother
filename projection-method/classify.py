@@ -24,15 +24,21 @@ def find_greatest_speed_index(path, valid_frames):
 	return greatest_speed_index
 
 
-def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=400, SPACE_MILLIS_OFFSET=50):
+def find_space_frames(tracepath, num_spaces, DIGIT_BUFFER_MILLIS=270, SPACE_BUFFER_MILLIS=300, SPACE_MILLIS_OFFSET=50):
+	if num_spaces == 0:
+		return []
+
 	path = tracepath.path
 	millis_per_frame = 1000 / tracepath.fps()
-	buffer_frames = int(SPACE_BUFFER_MILLIS / millis_per_frame)
+	space_frames_buffer = int(SPACE_BUFFER_MILLIS / millis_per_frame)
+	digit_frames_buffer = int(DIGIT_BUFFER_MILLIS / millis_per_frame)
 
 	space_frames = []
 	valid_frames = set([i for i in range(len(path))])
-	valid_frames = valid_frames.difference(set(range(0, buffer_frames)))
-	valid_frames = valid_frames.difference(set(range(len(path) - buffer_frames, len(path))))
+
+	# Take out beginning and end, since space isn't there
+	valid_frames = valid_frames.difference(set(range(0, digit_frames_buffer)))
+	valid_frames = valid_frames.difference(set(range(len(path) - digit_frames_buffer, len(path))))
 
 	while len(space_frames) < num_spaces:
 		greatest_speed_index = find_greatest_speed_index(path, valid_frames)
@@ -40,7 +46,7 @@ def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=400, SPACE_MILL
 
 		# Take out all frames in a buffer around this frame
 		valid_frames = valid_frames.difference(
-			set(range(greatest_speed_index - buffer_frames, greatest_speed_index + buffer_frames))
+			set(range(greatest_speed_index - digit_frames_buffer, greatest_speed_index + space_frames_buffer))
 		)
 	return sorted(space_frames)
 
@@ -55,7 +61,7 @@ def new_prediction(tracepath, candidates, num_digits, SPACE_MILLIS_RANGE=(200, 6
 		if i == 0:
 			# First digit from start to the first space, guaranteed
 			possible_space_intervals = [(0, 0)]
-			end_frame = space_beginning_frames[i]
+			end_frame = space_beginning_frames[i] if len(space_beginning_frames) > 0 else len(tracepath.path)
 		elif i == num_digits - 1:
 			# Last digit from space to end of tracepath
 			possible_space_intervals = generate_intervals(space_beginning_frames[i - 1], SPACE_MILLIS_RANGE, len(tracepath.path), tracepath.fps())

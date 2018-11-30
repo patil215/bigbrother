@@ -52,23 +52,9 @@ def plot_confusion_matrix(cm, classes,
 	plt.tight_layout()
 
 
-def update_statistics(statistics, classifications, video_class):
-	top3 = [thing[0] for thing in classifications[:3]]
-	top5 = [thing[0] for thing in classifications[:5]]
-	print("Predicted: {}, Expected: {}".format(
-		classifications[0][0], video_class))
-
-	if statistics[video_class]["classification"] == 0:
-		statistics[video_class]["classification"] = defaultdict(int)
-	statistics[video_class]["classification"][classifications[0][0]] += 1
-
-	if classifications[0][0] == video_class:
-		statistics[video_class]["correct"] += 1
-	if video_class in top3:
-		statistics[video_class]["correct_top3"] += 1
-	if video_class in top5:
-		statistics[video_class]["correct_top5"] += 1
-	statistics[video_class]["total"] += 1
+def update_classifications(classifications, prediction, video_class):
+	top_1_predicted = "_".join([p[0] for p in prediction])
+	classifications[video_class][top_1_predicted] += 1
 
 def print_distr(statistics):
 	keys = sorted(statistics.keys())
@@ -80,16 +66,26 @@ def print_distr(statistics):
 	)
 
 def plot_distr(statistics, length):
-	plt.plot(range(1, 11), [statistics["correct_" + str(i)] / statistics["total"] for i in range(1, 11)])
+	plt.plot(range(1, 11), [statistics[str(i)] / statistics["total"] for i in range(1, 11)])
 	plt.plot(range(1, 11), [(i / 10)**length for i in range(1, 11)])
 	plt.show()
 
-def update_statistics_batch(statistics, classifications, video_class):
+def print_average_rank(statistics):
+	total = statistics["total"]
+
+	for i in range(0, 11):
+		for j in range(i + 1, 11):
+			statistics[str(j)] -= statistics[str(i)]
+
+	del statistics["total"]
+	print("Average rank: {}".format(sum([statistics[key] * int(key) for key in statistics]) / total))
+
+def update_statistics(statistics, classifications, video_class):
 	classes = video_class.split("_")
 
 	for i in range(1, 11):
-		if "correct_" + str(i) not in statistics:
-			statistics["correct_" + str(i)] = 0
+		if str(i) not in statistics:
+			statistics[str(i)] = 0
 
 		correct = True
 		for preds, actual in zip(classifications, classes):
@@ -98,41 +94,36 @@ def update_statistics_batch(statistics, classifications, video_class):
 				break
 
 		if correct:	
-			statistics["correct_" + str(i)] += 1
+			statistics[str(i)] += 1
 	statistics["total"] += 1
 	print_distr(statistics)
 
 
-def print_statistics(statistics):
-	print("SUMMARY OF RESULTS:")
-	print("Exact / Top 3 / Top 5 / Total: {} / {} / {} / {}".format(
-			sum([statistics[c]["correct"] for c in statistics]),
-			sum([statistics[c]["correct_top3"] for c in statistics]),
-			sum([statistics[c]["correct_top5"] for c in statistics]),
-			sum([statistics[c]["total"] for c in statistics]),
-		)
-	)
+def output_classifications(classifications):
+
+	def compute_percentage(actual, classifications):
+		total = sum([classifications[actual][p] for p in classifications[actual]])
+		return (classifications[actual][actual] / total) * 100
+
 	print("BY CLASS:")
 	print(
 		tabulate(
-			[[c, statistics[c]["correct"]/statistics[c]["total"], statistics[c]["correct_top3"],
-				statistics[c]["correct_top5"], statistics[c]["total"]] for c in statistics],
-			headers=["Class", "Percent correct", "Top 3", "Top 5", "Total"]
+			[[c, compute_percentage(c, classifications)] for c in classifications],
+			headers=["Class", "Percent correct"]
 		)
 	)
 
-	class_names = list(statistics.keys())
-	pred = []
-	truth = []
-
-	# generate samples for the confusion matrix
+	class_names = list(classifications.keys())
+	preds = []
+	truths = []
+	# Generate samples for the confusion matrix
 	for truth_class in class_names:
-		for prediction_class in statistics[truth_class]["classification"]:
-			for i in range(statistics[truth_class]["classification"][prediction_class]):
-				pred.append(prediction_class)
-				truth.append(truth_class)
+		for prediction_class in classifications[truth_class]:
+			for _ in range(classifications[truth_class][prediction_class]):
+				preds.append(prediction_class)
+				truths.append(truth_class)
 
-	cnf_matrix = confusion_matrix(truth, pred, labels=class_names)
+	cnf_matrix = confusion_matrix(truths, preds, labels=class_names)
 	np.set_printoptions(precision=2)
 
 	# Plot non-normalized confusion matrix
@@ -148,18 +139,12 @@ def print_statistics(statistics):
 	plt.show()
 
 
-def do_prediction(training_data, path, statistics, video_class):
-	path.interpolate(25)
-	classifications = classifyDTW(training_data, path)
-	update_statistics(statistics, classifications, video_class)
-
-
-def do_prediction_batch(training_data, path, sequence_length, statistics, video_class):
-	print(video_class)
+def do_prediction(training_data, path, sequence_length, statistics, classifications, video_class):
 	prediction = new_prediction(path, training_data, sequence_length)
-	print(prediction)
+	print("Actual: {}, Predictions: {}".format(video_class, prediction))
+	update_statistics(statistics, prediction, video_class)
+	update_classifications(classifications, prediction, video_class)
 	print()
-	update_statistics_batch(statistics, prediction, video_class)
 
 
 @click.command()
@@ -193,10 +178,8 @@ def predict(test_dir, data, angle, frame, length):
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
 	prep_data(training_data, transform)
 
-	if length == 1:
-		statistics = defaultdict(lambda: defaultdict(int))
-	else:
-		statistics = defaultdict(int)
+	statistics = defaultdict(int)
+	classifications = defaultdict(lambda: defaultdict(int)) # (actual, predicted) eg. classifications[zero][one] = 1
 
 	# Classify test paths.
 	print("Classifying test paths...")
@@ -207,18 +190,12 @@ def predict(test_dir, data, angle, frame, length):
 				"{}/{}/{}".format(test_dir, video_class, path_name))
 			path.normalize()
 
-			#predict_space_frames(video_class, inverse_path, length)
-			if length == 1:
-				do_prediction(training_data, path, statistics, video_class)
-			else:
-				do_prediction_batch(training_data, path, length, statistics, video_class)
+			do_prediction(training_data, path, length, statistics, classifications, video_class)
 
+	plot_distr(statistics, length)
+	print_average_rank(statistics)
 	if length == 1:
-		print_statistics(statistics)
-	else:
-		plot_distr(statistics, length)
-		print(statistics)
-
+		output_classifications(classifications)
 
 if __name__ == "__main__":
 	predict()
