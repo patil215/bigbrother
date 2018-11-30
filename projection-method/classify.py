@@ -24,13 +24,16 @@ def find_greatest_speed_index(path, valid_frames):
 	return greatest_speed_index
 
 
-def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=250, SPACE_MILLIS_OFFSET=50):
+def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=400, SPACE_MILLIS_OFFSET=50):
 	path = tracepath.path
 	millis_per_frame = 1000 / tracepath.fps()
-	buffer_frames = int(250 / millis_per_frame)
+	buffer_frames = int(SPACE_BUFFER_MILLIS / millis_per_frame)
 
 	space_frames = []
 	valid_frames = set([i for i in range(len(path))])
+	valid_frames = valid_frames.difference(set(range(0, buffer_frames)))
+	valid_frames = valid_frames.difference(set(range(len(path) - buffer_frames, len(path))))
+
 	while len(space_frames) < num_spaces:
 		greatest_speed_index = find_greatest_speed_index(path, valid_frames)
 		space_frames.append(max(0, greatest_speed_index - int(SPACE_MILLIS_OFFSET / millis_per_frame)))
@@ -42,7 +45,7 @@ def find_space_frames(tracepath, num_spaces, SPACE_BUFFER_MILLIS=250, SPACE_MILL
 	return sorted(space_frames)
 
 
-def new_prediction(tracepath, candidates, num_digits, num_to_keep=10):
+def new_prediction(tracepath, candidates, num_digits, SPACE_MILLIS_RANGE=(200, 600), num_to_keep=10):
 	space_beginning_frames = find_space_frames(tracepath, num_digits - 1)
 	print("Space beginning frames are: {}".format(space_beginning_frames))
 
@@ -55,11 +58,11 @@ def new_prediction(tracepath, candidates, num_digits, num_to_keep=10):
 			end_frame = space_beginning_frames[i]
 		elif i == num_digits - 1:
 			# Last digit from space to end of tracepath
-			possible_space_intervals = generate_intervals(space_beginning_frames[i - 1], (200, 600), len(tracepath.path), tracepath.fps())
+			possible_space_intervals = generate_intervals(space_beginning_frames[i - 1], SPACE_MILLIS_RANGE, len(tracepath.path), tracepath.fps())
 			end_frame = len(tracepath.path)
 		else:
 			# Guess that the space is about 25 frames, and beginning of digit starts after
-			possible_space_intervals = generate_intervals(space_beginning_frames[i - 1], (200, 600), len(tracepath.path), tracepath.fps())
+			possible_space_intervals = generate_intervals(space_beginning_frames[i - 1], SPACE_MILLIS_RANGE, len(tracepath.path), tracepath.fps())
 			end_frame = space_beginning_frames[i]
 
 		results = []
@@ -258,14 +261,3 @@ def classifyDTW(candidates, path, penalize_time_difference=False, time_penalty_f
 		results[name] = min_dist
 
 	return sorted(results.items(), key=operator.itemgetter(1))
-
-	"""results = []
-	for name in candidates.keys():
-		for candidate in candidates[name]:
-			dist = computeDTWDistance(x_actual, y_actual, candidate.sequence(0), candidate.sequence(1))
-			results.append((dist, name))
-
-	results = sorted(results)
-	print(results[:5])
-	mode = Counter(r[1] for r in results[:5]).most_common(1)[0][0]
-	return [(mode, results[0][0])]"""
