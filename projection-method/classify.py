@@ -97,7 +97,7 @@ def new_prediction(tracepath, candidates, num_digits, SPACE_MILLIS_RANGE=(200, 6
 	return classified_sequence
 
 
-def get_class_time_ranges(data, z_index=3):
+def get_class_time_ranges(data, z_index=2.5):
 	ranges = {}
 	for class_name in data:
 		lengths = [tracepath.path[-1].t - tracepath.path[0].t for tracepath in data[class_name]]
@@ -235,7 +235,7 @@ def computeTWEDDistance(actual_path, test_path, stiffness=0.0003, delete_cost=0.
 
 	return DTWEDL1d(2, actual_points, actual_timestamps, test_points, test_timestamps, stiffness, delete_cost, degree)
 
-def classifyDTW(candidates, path, penalize_time_difference=False, time_penalty_factor=1250, include_space=False):
+def classifyDTW(candidates, path, penalize_time_difference=True, time_penalty_factor=2500, include_space=False):
 	"""
 	Uses Dynamic Time Warping to classify a path as one of the candidates.
 	candidates: dict from class name to list of normalized TracePaths, ex) {"zero": [pathName]}
