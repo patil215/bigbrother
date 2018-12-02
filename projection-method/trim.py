@@ -263,7 +263,7 @@ def segment(video, compressed, height, dest, vertical, offset, viewport_horizont
                 frame_index + offset,
                 viewport_vertical,
                 fps,
-                height
+                height,
                 checkpoints=set([i + offset for i in checkpoint_indices])
             )
             path_save_vertical_thread.start()

@@ -16,7 +16,7 @@ Lets you easily align two video segments - a horizontal segment, and a vertical 
 @click.argument("video_horizontal")
 @click.argument("video_vertical")
 @click.option("-h", "--height", default=500, type=click.INT, required=False)
-def align(video_horizontal, video_vertical, video_horizontal_dest, video_vertical_dest, height):
+def align(video_horizontal, video_vertical, height):
     if not os.path.exists(video_horizontal) or not os.path.exists(video_vertical):
         print("Invalid paths provided for videos!")
         sys.exit(1)

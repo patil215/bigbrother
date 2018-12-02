@@ -1,3 +1,8 @@
+Final ground truth data command:
+python3 trim.py ../clips/final_data/classification/horizontal.mp4 --vertical ../clips/final_data/classification/vertical.mp4 --height 1050 --offset -10 --viewport_horizontal 26 45 --viewport_vertical 45 26 --compressed ../clips/final_data/classification/horizontal_shrunk.mp4
+
+
+
 VIDEO OFFSET: VIDEO A IS 310-315 FRAMES AHEAD OF VIDEO B
 e.g. python3 trim.py ../clips/aligned/horizontal.MP4 --dest ../data_thebigone --start 10 --height 1000 --trace --vertical ../clips/aligned/vertical.MP4 --offset -17
 
