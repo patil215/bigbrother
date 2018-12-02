@@ -19,12 +19,6 @@ from vizutils import (draw_tracepoints, generate_random_bounding_boxes,
                       request_bounding_box)
 
 
-def spawn_segment_save_thread(video_file, dest_full_path, start_index, end_index):
-    return threading.Thread(
-        target=write_video_frames,
-        args=(video_file, start_index, end_index, dest_full_path)
-    )
-
 def spawn_path_track_thread(video_file, dest_full_path, start_index, end_index, viewport, fps, height, checkpoints=None):
     checkpoints = checkpoints if checkpoints is not None else set()
 
@@ -52,8 +46,11 @@ def merge_tracepaths(to_merge):
         tracepath_xy = read_obj(path_save_video_dest)
         tracepath_z = read_obj(path_save_vertical_dest)
 
+        if tracepath_xy.checkpoint_indices != tracepath_z.checkpoint_indices:
+            print("Warning: checkpoint indices do not match")
+
         # Merge the two tracepaths
-        merged_tracepath = TracePath()
+        merged_tracepath = TracePath(checkpoint_indices=tracepath_xy.checkpoint_indices)
         if len(tracepath_xy.path) != len(tracepath_z.path):
             print("Warning: path lengths are not equal")
 
@@ -79,7 +76,7 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
     # The input array should be empty if the vertical flag is not specified.
     merge_tracepaths(tracepaths_to_merge)
 
-    sys.exit(0)
+    sys.exit(exit_code)
 
 @click.command()
 @click.argument("video")
@@ -87,7 +84,6 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.option("-h", "--height", default=700, required=False, help="Video preview display height")
 @click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
 @click.option("-t", "--no_trace", is_flag=True, default=False, help="Disable trace path recording mode")
-@click.option("-d", "--debug", is_flag=True, help="Enable trace path debugging", default=False, required=False)
 @click.option("-v", "--vertical", default=None, required=False,
     help="""Vertical video to correlate.
         It is assumed the length of the vertical video matches the original video.
@@ -96,7 +92,7 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.option("-o", "--offset", type=click.INT, required=False, default=None, help="How many frames behind vertical is compared to horizontal")
 @click.option("-z", "--viewport_horizontal", nargs=2, default=(20, 35), help="Size of viewable viewport for top-down video (X, then Y) in cm")
 @click.option("-x", "--viewport_vertical", nargs=2, default=(34, 19), help="Size of viewport for vertical video (Y, then Z) in cm. Right now, only Z is used.")
-def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, viewport_horizontal, viewport_vertical):
+def segment(video, compressed, height, dest, no_trace, vertical, offset, viewport_horizontal, viewport_vertical):
     if not os.path.exists(video):
         print("Invalid video to trim provided!")
         sys.exit(1)
@@ -123,7 +119,6 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
     # sanity check FPSes
     fps = VIDEO_SOURCE.get(cv2.CAP_PROP_FPS)
     print("FPS of source: {}".format(fps))
-
     if VIDEO_COMPRESSED_SOURCE:
         fps_compressed = VIDEO_COMPRESSED_SOURCE.get(cv2.CAP_PROP_FPS)
         print("FPS of compressed: {}".format(fps_compressed))
@@ -162,6 +157,7 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
             cv2.imshow("Clipper", frame)
 
             key = cv2.waitKey(0) & 0xFF
+
             if key == ord("s"):
                 start_index = frame_index
                 checkpoint_indices = set()
@@ -169,16 +165,12 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
                 print("[{0} - ?] Starting at frame {0}".format(start_index))
                 print("Skipping ahead 5 frames...")
                 frame_index += 5
-                continue
-
             elif key == ord("e"):
                 if frame_index < start_index:
                     print("End index selected before start index. Please select a start index [s] first.")
                     continue
-
                 print("[{0} - {1}] Ending at frame {1}".format(start_index, frame_index))
                 break
-
             elif key == ord('c'):
                 # mark checkpoint
                 if frame_index not in checkpoint_indices and frame_index > start_index:
@@ -188,33 +180,22 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
                     ))
                     print("Skipping ahead 5 frames...")
                     frame_index += 5
-
-                continue
-
             elif key == ord("b"):
                 frame_index = frame_index - 1 if frame_index > 0 else frame_index
-                continue
             elif key == ord("n"):
                 frame_index += 1
-                continue
             elif key == ord("h"):
                 frame_index = frame_index - 2 if frame_index > 1 else frame_index
-                continue
             elif key == ord("j"):
                 frame_index += 2
-                continue
             elif key == ord("f"):
                 frame_index += 20
-                continue
             elif key == ord("v"):
                 frame_index += 400
-                continue
             elif key == ord("z"):
                 frame_index = frame_index - 400 if frame_index > 400 else frame_index
-                continue
             elif key == ord("a"):
                 frame_index = frame_index - 20 if frame_index > 20 else frame_index
-                continue
             elif key == ord("q"):
                 safe_quit(threads, tracepath_files_to_merge, 0)
 
@@ -222,7 +203,7 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
         num_checkpoints = len(checkpoint_indices)
         if num_checkpoints == 0:
             print("INFO: zero checkpoints specified, assuming unpadded single digit")
-        if num_checkpoints % 2 == 1:
+        elif num_checkpoints % 2 == 1:
             print("WARNING: odd number of checkpoints ({}). Assuming end frame is final checkpoint...".format(num_checkpoints))
             checkpoint_indices.add(frame_index)
 
@@ -245,82 +226,37 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
         # The file number is the `max` of all the next file numbers in possible destinations, for consistency.
         digit_qty_folder = "{}/{}_digits/".format(DEST_BASE_DIR, len(class_names))
         class_save_folder = digit_qty_folder + concat_class_name
-        segment_save_folder = "{}/segments".format(class_save_folder)
         path_save_folder = "{}/paths".format(class_save_folder)
         vertical_path_save_folder = "{}/paths_vertical".format(class_save_folder)
 
-        file_number = max(get_next_file_number(segment_save_folder),
+        file_number = max(
             get_next_file_number(path_save_folder),
-            get_next_file_number(vertical_path_save_folder))
+            get_next_file_number(vertical_path_save_folder)
+        )
 
-        segment_save_path = "{}/{}.segment".format(segment_save_folder, file_number)
         path_save_path = "{}/{}.path".format(path_save_folder, file_number)
         vertical_path_save_path = "{}/{}.vpath".format(path_save_folder, file_number)
 
-        # Save the segment from video
         print(
-            "[{0} - {1}] Loading and saving {2} frame segment..."
+            "[{0} - {1}] Creating path from segment of length {2}..."
             .format(start_index, frame_index, frame_index + 1 - start_index)
         )
-
-        #segment_save_thread = spawn_segment_save_thread(
-        #    video,
-        #    segment_save_path,
-        #    start_index,
-        #    frame_index,
-        #)
-        #segment_save_thread.start()
-        #threads.append(segment_save_thread)
 
         if no_trace:
             continue
 
-        # When debugging, the bounding box can be redrawn until satisfied
-        # with the resulting trace. Confirm with Enter.
-        if debug:
-            print("DEBUG trace path mode enabled. Loading segment...")
-            target_segment = read_video_frames(video, start_index, frame_index)
-            initial_frame = target_segment[0]
-            proposed_paths = []
-
-            print("Generating bounding boxes...")
-            seed_bbox = request_bounding_box(target_segment[0], height)
-            bboxes = [seed_bbox] + generate_random_bounding_boxes(seed_bbox, 4, initial_frame.shape[1], initial_frame.shape[0])
-
-            print("Performing motion tracking...")
-            for bbox in bboxes:
-                proposed_paths.append(tracepath_from_frames(target_segment, fps, viewport_horizontal, height,
-                    tracker=Tracker(target_segment[0], 'CSRT', height, bbox=bbox)))
-
-            path_index = 0
-            for path_obj in proposed_paths:
-                draw_tracepoints(path_obj, title="Proposed Path")
-
-                key = cv2.waitKey(0) & 0xFF
-                if key == ord('q'):
-                    safe_quit(threads, tracepath_files_to_merge, 0)
-                elif key == ord('\r'):
-                    write_obj(path_save_path.replace(".path", "-{}.path".format(path_index)), path_obj)
-                    path_index += 1
-                # for any other key, skip
-            cv2.destroyWindow("Proposed Path")
-
-            print("Saved {} paths to {}".format(path_index, path_save_folder))
-
-        # If not debugging, trace and save asynchronously
-        else:
-            path_save_video_thread = spawn_path_track_thread(
-                video,
-                path_save_path,
-                start_index,
-                frame_index,
-                viewport_horizontal,
-                fps,
-                height,
-                checkpoints=checkpoint_indices
-            )
-            path_save_video_thread.start()
-            threads.append(path_save_video_thread)
+        path_save_video_thread = spawn_path_track_thread(
+            video,
+            path_save_path,
+            start_index,
+            frame_index,
+            viewport_horizontal,
+            fps,
+            height,
+            checkpoints=checkpoint_indices
+        )
+        path_save_video_thread.start()
+        threads.append(path_save_video_thread)
 
         if vertical:
             # We need to find the TracePath for both segments, and schedule a merge later.
@@ -332,6 +268,7 @@ def segment(video, compressed, height, dest, no_trace, debug, vertical, offset, 
                 viewport_vertical,
                 fps,
                 height
+                checkpoints=set([i + offset for i in checkpoint_indices])
             )
             path_save_vertical_thread.start()
             threads.append(path_save_vertical_thread)
