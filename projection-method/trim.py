@@ -83,7 +83,6 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.option("-c", "--compressed", default=None, required=False, help="Compressed video to display for fast loading")
 @click.option("-h", "--height", default=700, required=False, help="Video preview display height")
 @click.option("-d", "--dest", default="data", required=False, help="Destination folder for segments and paths")
-@click.option("-t", "--no_trace", is_flag=True, default=False, help="Disable trace path recording mode")
 @click.option("-v", "--vertical", default=None, required=False,
     help="""Vertical video to correlate.
         It is assumed the length of the vertical video matches the original video.
@@ -92,7 +91,7 @@ def safe_quit(threads, tracepaths_to_merge, exit_code):
 @click.option("-o", "--offset", type=click.INT, required=False, default=None, help="How many frames behind vertical is compared to horizontal")
 @click.option("-z", "--viewport_horizontal", nargs=2, default=(20, 35), help="Size of viewable viewport for top-down video (X, then Y) in cm")
 @click.option("-x", "--viewport_vertical", nargs=2, default=(34, 19), help="Size of viewport for vertical video (Y, then Z) in cm. Right now, only Z is used.")
-def segment(video, compressed, height, dest, no_trace, vertical, offset, viewport_horizontal, viewport_vertical):
+def segment(video, compressed, height, dest, vertical, offset, viewport_horizontal, viewport_vertical):
     if not os.path.exists(video):
         print("Invalid video to trim provided!")
         sys.exit(1)
@@ -241,9 +240,6 @@ def segment(video, compressed, height, dest, no_trace, vertical, offset, viewpor
             "[{0} - {1}] Creating path from segment of length {2}..."
             .format(start_index, frame_index, frame_index + 1 - start_index)
         )
-
-        if no_trace:
-            continue
 
         path_save_video_thread = spawn_path_track_thread(
             video,
