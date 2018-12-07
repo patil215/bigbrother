@@ -89,6 +89,13 @@ def get_test_path_tree(root_dir):
         tree[folder] = list(filter(lambda filename: filename[-5:] == ".path", tree[folder]))
     return tree
 
+def get_test_angle_paths(root_dir):
+    tree = get_file_tree(root_dir)
+    test_angle_paths = []
+    for folder in tree:
+        test_angle_paths.append("{}/{}".format(root_dir, folder))
+    return test_angle_paths
+
 def get_next_file_number(root_dir):
     """
     Reads a directory of files with integer filenames and returns the next available file name

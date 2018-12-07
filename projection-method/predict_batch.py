@@ -146,14 +146,7 @@ def do_prediction(training_data, path, sequence_length, statistics, classificati
 	update_classifications(classifications, prediction, video_class)
 	print()
 
-
-@click.command()
-@click.argument('test_dir')
-@click.option('-d', '--data', help="Location of the data directory", default="data")
-@click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=None)
-@click.option('-f', '--frame', help="Representative frame used for estimating angle", default=None)
-@click.option('-l', '--length', help="Digit sequence length", default=1)
-def predict(test_dir, data, angle, frame, length):
+def test_batch(test_dir, data, angle, length):
 	if not os.path.exists(test_dir):
 		print("Invalid test directory provided!")
 		return
@@ -163,16 +156,6 @@ def predict(test_dir, data, angle, frame, length):
 
 	path_tree = get_test_path_tree(test_dir)
 	training_data = read_training_data(data)
-
-	if angle:
-		print("Using provided angle")
-	elif frame:
-		# Automatically estimate angle
-		angle = estimate_paper_rotation(frame)
-		print("Autodetecting angles: got {}".format(angle))
-	else:
-		print("Either supply an angle or a frame")
-		sys.exit(1)
 
 	x, y, z = [math.radians(int(d)) for d in angle]
 	transform = eulerAnglesToRotationMatrix(np.array([x, y, z]))
@@ -189,8 +172,31 @@ def predict(test_dir, data, angle, frame, length):
 			path = read_obj(
 				"{}/{}/{}".format(test_dir, video_class, path_name))
 			path.normalize()
+			print(video_class + " " + path_name)
 
 			do_prediction(training_data, path, length, statistics, classifications, video_class)
+
+	return (statistics, classifications)
+
+
+@click.command()
+@click.argument('test_dir')
+@click.option('-d', '--data', help="Location of the data directory", default="data")
+@click.option('-a', '--angle', help="Camera position in degrees", nargs=3, default=None)
+@click.option('-f', '--frame', help="Representative frame used for estimating angle", default=None)
+@click.option('-l', '--length', help="Digit sequence length", default=1)
+def predict(test_dir, data, angle, frame, length):
+	if angle:
+		print("Using provided angle")
+	elif frame:
+		# Automatically estimate angle
+		angle = estimate_paper_rotation(frame)
+		print("Autodetecting angles: got {}".format(angle))
+	else:
+		print("Either supply an angle or a frame")
+		sys.exit(1)
+
+	statistics, classifications = test_batch(test_dir, data, angle, length)
 
 	plot_distr(statistics, length)
 	print_average_rank(statistics)
