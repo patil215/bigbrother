@@ -94,6 +94,9 @@ def new_prediction(tracepath, candidates, num_digits, SPACE_MILLIS_RANGE=(200, 6
 			results = results[1:]
 		classified_sequence.append(list(unique_classes))
 
+	for seq in classified_sequence:
+		if len(seq) == 0:
+			raise Exception
 	return classified_sequence
 
 

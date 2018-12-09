@@ -140,11 +140,14 @@ def output_classifications(classifications):
 
 
 def do_prediction(training_data, path, sequence_length, statistics, classifications, video_class):
-	prediction = new_prediction(path, training_data, sequence_length)
-	print("Actual: {}, Predictions: {}".format(video_class, prediction))
-	update_statistics(statistics, prediction, video_class)
-	update_classifications(classifications, prediction, video_class)
-	print()
+	try:
+		prediction = new_prediction(path, training_data, sequence_length)
+		print("Actual: {}, Predictions: {}".format(video_class, prediction))
+		update_statistics(statistics, prediction, video_class)
+		update_classifications(classifications, prediction, video_class)
+		print()
+	except Exception as e:
+		print("Skipping")
 
 def test_batch(test_dir, data, angle, length):
 	if not os.path.exists(test_dir):
