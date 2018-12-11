@@ -3,6 +3,7 @@ from fileutils import get_test_angle_paths, write_obj
 from project import estimate_paper_rotation
 from predict_batch import test_batch
 from collections import defaultdict
+import easygui
 
 @click.command()
 @click.argument("test_dir")
@@ -15,10 +16,11 @@ def test_suite(test_dir, data, output):
 	print("Determining angles for frames...")
 	angles = {}
 	for path in angle_paths:
-		angles[path] = estimate_paper_rotation("{}/{}".format(path, "frame.png"))
+		raw = easygui.enterbox("Please specify angle for {} (3 integers separated by space).".format(path))
+		angles[path] = tuple(map(int, raw.split(" ")))
 
 	# Iterate through all possible sequence lengths and take data for them
-	for length in range(1, 3): # Exclude 10 digit
+	for length in range(3, 10): # Exclude 10 digit
 		all_path_statistics = []
 		for path in angle_paths:
 			statistics, classifications = test_batch("{}/{}_digits/".format(path, length), data, angles[path], length)
